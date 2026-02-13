@@ -11,8 +11,8 @@ from pathlib import Path
 # =========================
 BASE_DIR = Path(__file__).resolve().parent
 
-INPUT_PATH = BASE_DIR / "resources_raw.csv"
-OUTPUT_PATH = BASE_DIR / "resources_processed.csv"
+INPUT_PATH = BASE_DIR / "raw / "resources_raw.csv"
+OUTPUT_PATH = BASE_DIR / "processed" / "resources_processed.csv"
 
 
 # =========================
@@ -196,3 +196,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
