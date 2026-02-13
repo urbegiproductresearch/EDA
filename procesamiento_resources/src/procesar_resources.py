@@ -9,7 +9,7 @@ from pathlib import Path
 # =========================
 # RUTAS
 # =========================
-BASE_DIR = Path(__file__).resolve().parent.parent
+BASE_DIR = Path(__file__).resolve().parent.parents[1]
 
 INPUT_PATH = BASE_DIR / "procesamiento_resources" / "data" / "raw" / "resources_raw.csv"
 OUTPUT_PATH = BASE_DIR / "procesamiento_resources" / "data" / "processed" / "resources_processed.csv"
@@ -196,6 +196,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
