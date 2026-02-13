@@ -3,7 +3,7 @@ name: Procesar CSV
 on:
   push:
     paths:
-      - procesamiento_resources/data/raw/**
+      - 'procesamiento_resources/data/raw/resources_raw.csv'
 
 jobs:
   build:
