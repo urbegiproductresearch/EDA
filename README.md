@@ -14,7 +14,7 @@ El proceso funciona de la siguiente manera:
 1. Se descarga el archivo CSV desde la web.
 2. Se sube el archivo como:
    
-   procesamiento_resources/data/raw/resources_raw.csv u como sean los nombres de las tablas
+   procesamiento_resources/data/raw/resources_raw.csv o como sean los nombres de las tablas requeridas
 
 3. GitHub Actions ejecuta automáticamente el script de procesamiento.
 4. Se genera el archivo limpio en:
