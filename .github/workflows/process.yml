@@ -27,6 +27,6 @@ jobs:
         run: |
           git config user.name "github-actions"
           git config user.email "actions@github.com"
-          git add processed/resources_processed.csv
+          git add data/processed/resources_processed.csv
           git commit -m "Auto update processed CSV"
           git push
