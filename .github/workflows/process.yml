@@ -30,3 +30,10 @@ jobs:
           git add procesamiento_resources/data/processed/resources_processed.csv
           git commit -m "Auto update processed CSV"
           git push
+
+      - name: Instalar dependencias
+        run: |
+          pip install pandas openpyxl
+      - name: Ejecutar procesamiento evolution
+        run: |
+          python procesamiento_evolution/scripts/procesar_evolution.py
