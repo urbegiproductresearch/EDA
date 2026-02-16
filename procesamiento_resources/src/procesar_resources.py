@@ -3,8 +3,8 @@
 # =========================
 import pandas as pd
 import numpy as np
+import re
 from pathlib import Path
-from collections import Counter
 
 
 # =========================
@@ -57,23 +57,27 @@ TIPO_CONTENIDO = [
 
 
 # =========================
-# FUNCIÓN PARA RENOMBRAR DUPLICADOS
+# FUNCIÓN PARA RESOLVER DUPLICADOS (.1, .2, etc.)
 # =========================
 def resolver_columnas_duplicadas(df):
 
-    cols = pd.Series(df.columns)
-    duplicates = cols[cols.duplicated()].unique()
+    nuevas_columnas = list(df.columns)
 
-    for col in duplicates:
-        indices = cols[cols == col].index.tolist()
+    for i, col in enumerate(nuevas_columnas):
 
-        for i in indices:
-            if pd.api.types.is_numeric_dtype(df.iloc[:, i]):
-                cols[i] = f"{col}_num"
+        # Detectar columnas tipo "Nombre.1"
+        match = re.match(r"^(.*)\.(\d+)$", col)
+
+        if match:
+            base = match.group(1)
+
+            # Si la columna es numérica → base_num
+            if pd.api.types.is_numeric_dtype(df[col]):
+                nuevas_columnas[i] = f"{base}_num"
             else:
-                cols[i] = col
+                nuevas_columnas[i] = base
 
-    df.columns = cols
+    df.columns = nuevas_columnas
     return df
 
 
@@ -136,21 +140,39 @@ def procesar_categorias(row):
 
     for item in items:
 
+        # -------------------------
+        # GENERO
+        # -------------------------
         if item in GENEROS:
             genero = item
 
+        # -------------------------
+        # EDAD
+        # -------------------------
         elif item in EDADES_VALIDAS:
             edad = item
 
+        # -------------------------
+        # ORGANIZACIÓN
+        # -------------------------
         elif tipo_perfil == "Organización" and item in TIPOS_ORGANIZACION_VALIDOS:
             tipo_organizacion = item
 
+        # -------------------------
+        # CONTEXTO PROFESIONAL
+        # -------------------------
         elif tipo_perfil == "Perfil profesional" and item in CONTEXTO_PROFESIONAL_VALIDO:
             contexto_profesional = item
 
+        # -------------------------
+        # TIPO CONTENIDO SECUNDARIO
+        # -------------------------
         elif item in TIPO_CONTENIDO:
             tipo_contenido.append(item)
 
+        # -------------------------
+        # SECTORES
+        # -------------------------
         else:
             if tipo_perfil == "Perfil profesional":
                 sector_profesional.append(item)
@@ -181,7 +203,7 @@ def main():
     df = pd.read_csv(INPUT_PATH)
     df.columns = df.columns.str.strip()
 
-    # Resolver duplicados antes de procesar
+    # Resolver columnas duplicadas tipo ".1"
     df = resolver_columnas_duplicadas(df)
 
     print("Procesando categorías...")
@@ -196,9 +218,4 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
-
-
-
 
