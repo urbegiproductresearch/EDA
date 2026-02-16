@@ -5,6 +5,7 @@ import pandas as pd
 import numpy as np
 import re
 from pathlib import Path
+from collections import defaultdict
 
 
 # =========================
@@ -57,27 +58,49 @@ TIPO_CONTENIDO = [
 
 
 # =========================
-# FUNCIÓN PARA RESOLVER DUPLICADOS (.1, .2, etc.)
+# FUNCIÓN ROBUSTA PARA DUPLICADOS
 # =========================
 def resolver_columnas_duplicadas(df):
 
-    nuevas_columnas = list(df.columns)
+    # Agrupar columnas por nombre base (sin .1 .2 etc)
+    grupos = defaultdict(list)
 
-    for i, col in enumerate(nuevas_columnas):
+    for col in df.columns:
+        base = re.sub(r"\.\d+$", "", col)
+        grupos[base].append(col)
 
-        # Detectar columnas tipo "Nombre.1"
-        match = re.match(r"^(.*)\.(\d+)$", col)
+    nuevas_columnas = {}
 
-        if match:
-            base = match.group(1)
+    for base, columnas in grupos.items():
 
-            # Si la columna es numérica → base_num
-            if pd.api.types.is_numeric_dtype(df[col]):
-                nuevas_columnas[i] = f"{base}_num"
+        if len(columnas) == 1:
+            nuevas_columnas[columnas[0]] = base
+            continue
+
+        # Separar numéricas y no numéricas
+        numericas = [c for c in columnas if pd.api.types.is_numeric_dtype(df[c])]
+        no_numericas = [c for c in columnas if not pd.api.types.is_numeric_dtype(df[c])]
+
+        # Asignar nombre base a la primera no numérica
+        if no_numericas:
+            nuevas_columnas[no_numericas[0]] = base
+
+            # Si hubiera más no numéricas
+            for idx, col in enumerate(no_numericas[1:], start=2):
+                nuevas_columnas[col] = f"{base}_text{idx}"
+        else:
+            # Si todas son numéricas
+            nuevas_columnas[columnas[0]] = base
+
+        # Renombrar numéricas
+        for idx, col in enumerate(numericas, start=1):
+            if idx == 1:
+                nuevas_columnas[col] = f"{base}_num"
             else:
-                nuevas_columnas[i] = base
+                nuevas_columnas[col] = f"{base}_num{idx}"
 
-    df.columns = nuevas_columnas
+    df = df.rename(columns=nuevas_columnas)
+
     return df
 
 
@@ -140,39 +163,21 @@ def procesar_categorias(row):
 
     for item in items:
 
-        # -------------------------
-        # GENERO
-        # -------------------------
         if item in GENEROS:
             genero = item
 
-        # -------------------------
-        # EDAD
-        # -------------------------
         elif item in EDADES_VALIDAS:
             edad = item
 
-        # -------------------------
-        # ORGANIZACIÓN
-        # -------------------------
         elif tipo_perfil == "Organización" and item in TIPOS_ORGANIZACION_VALIDOS:
             tipo_organizacion = item
 
-        # -------------------------
-        # CONTEXTO PROFESIONAL
-        # -------------------------
         elif tipo_perfil == "Perfil profesional" and item in CONTEXTO_PROFESIONAL_VALIDO:
             contexto_profesional = item
 
-        # -------------------------
-        # TIPO CONTENIDO SECUNDARIO
-        # -------------------------
         elif item in TIPO_CONTENIDO:
             tipo_contenido.append(item)
 
-        # -------------------------
-        # SECTORES
-        # -------------------------
         else:
             if tipo_perfil == "Perfil profesional":
                 sector_profesional.append(item)
@@ -203,7 +208,7 @@ def main():
     df = pd.read_csv(INPUT_PATH)
     df.columns = df.columns.str.strip()
 
-    # Resolver columnas duplicadas tipo ".1"
+    # Resolver duplicados correctamente
     df = resolver_columnas_duplicadas(df)
 
     print("Procesando categorías...")
@@ -218,4 +223,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
