@@ -4,6 +4,7 @@
 import pandas as pd
 import numpy as np
 from pathlib import Path
+from collections import Counter
 
 
 # =========================
@@ -56,6 +57,27 @@ TIPO_CONTENIDO = [
 
 
 # =========================
+# FUNCIÓN PARA RENOMBRAR DUPLICADOS
+# =========================
+def resolver_columnas_duplicadas(df):
+
+    cols = pd.Series(df.columns)
+    duplicates = cols[cols.duplicated()].unique()
+
+    for col in duplicates:
+        indices = cols[cols == col].index.tolist()
+
+        for i in indices:
+            if pd.api.types.is_numeric_dtype(df.iloc[:, i]):
+                cols[i] = f"{col}_num"
+            else:
+                cols[i] = col
+
+    df.columns = cols
+    return df
+
+
+# =========================
 # FUNCIÓN DE CLASIFICACIÓN SUPERIOR
 # =========================
 def clasificar_categoria_contenido(tipo_perfil, items):
@@ -63,7 +85,6 @@ def clasificar_categoria_contenido(tipo_perfil, items):
     if tipo_perfil not in TIPOS_CONTENIDO_GENERAL:
         return np.nan
 
-    # Reglas directas por tipo de perfil
     if tipo_perfil == "Evento":
         return "Evento"
 
@@ -73,7 +94,6 @@ def clasificar_categoria_contenido(tipo_perfil, items):
     if tipo_perfil == "Oferta de empleo":
         return "Búsqueda de empleo"
 
-    # Reglas por categorías relacionadas con empleo
     empleo_keywords = [
         "En búsqueda de empleo",
         "Búsqueda de empleo",
@@ -83,7 +103,6 @@ def clasificar_categoria_contenido(tipo_perfil, items):
     if any(item in empleo_keywords for item in items):
         return "Búsqueda de empleo"
 
-    # Noticias y resto
     if tipo_perfil == "Noticia":
         return "Actualidad"
 
@@ -103,7 +122,6 @@ def procesar_categorias(row):
 
     items = [c.strip() for c in str(categorias).split(",") if c.strip()]
 
-    # Inicialización
     genero = np.nan
     edad = np.nan
     tipo_organizacion = np.nan
@@ -114,64 +132,43 @@ def procesar_categorias(row):
     sector_evento = []
     tipo_contenido = []
 
-    # Clasificación superior combinada
     categoria_contenido = clasificar_categoria_contenido(tipo_perfil, items)
 
     for item in items:
 
-        # -------------------------
-        # GENERO
-        # -------------------------
         if item in GENEROS:
             genero = item
 
-        # -------------------------
-        # EDAD (solo valores exactos)
-        # -------------------------
         elif item in EDADES_VALIDAS:
             edad = item
 
-        # -------------------------
-        # ORGANIZACION
-        # -------------------------
         elif tipo_perfil == "Organización" and item in TIPOS_ORGANIZACION_VALIDOS:
             tipo_organizacion = item
 
-        # -------------------------
-        # CONTEXTO PERFIL PROFESIONAL
-        # -------------------------
         elif tipo_perfil == "Perfil profesional" and item in CONTEXTO_PROFESIONAL_VALIDO:
             contexto_profesional = item
 
-        # -------------------------
-        # TIPO CONTENIDO SECUNDARIO
-        # -------------------------
         elif item in TIPO_CONTENIDO:
             tipo_contenido.append(item)
 
-        # -------------------------
-        # SECTORES SEGÚN PERFIL
-        # -------------------------
         else:
             if tipo_perfil == "Perfil profesional":
                 sector_profesional.append(item)
-
             elif tipo_perfil == "Noticia":
                 sector_noticia.append(item)
-
             elif tipo_perfil == "Evento":
                 sector_evento.append(item)
 
     return pd.Series({
-        "genero": genero,
-        "edad": edad,
-        "contexto_profesional": contexto_profesional,
-        "tipo_organizacion": tipo_organizacion,
-        "categoria_contenido": categoria_contenido,
-        "sector_profesional": "; ".join(sector_profesional) if sector_profesional else np.nan,
-        "sector_noticia": "; ".join(sector_noticia) if sector_noticia else np.nan,
-        "sector_evento": "; ".join(sector_evento) if sector_evento else np.nan,
-        "tipo_contenido": "; ".join(tipo_contenido) if tipo_contenido else np.nan
+        "Supercategoria[genero]": genero,
+        "Supercategoria[edad]": edad,
+        "Supercategoria[contexto_profesional]": contexto_profesional,
+        "Supercategoria[tipo_organizacion]": tipo_organizacion,
+        "Supercategoria[categoria_contenido]": categoria_contenido,
+        "Supercategoria[sector_profesional]": "; ".join(sector_profesional) if sector_profesional else np.nan,
+        "Supercategoria[sector_noticia]": "; ".join(sector_noticia) if sector_noticia else np.nan,
+        "Supercategoria[sector_evento]": "; ".join(sector_evento) if sector_evento else np.nan,
+        "Supercategoria[tipo_contenido]": "; ".join(tipo_contenido) if tipo_contenido else np.nan
     })
 
 
@@ -183,6 +180,9 @@ def main():
     print("Cargando datos...")
     df = pd.read_csv(INPUT_PATH)
     df.columns = df.columns.str.strip()
+
+    # Resolver duplicados antes de procesar
+    df = resolver_columnas_duplicadas(df)
 
     print("Procesando categorías...")
     nuevas_columnas = df.apply(procesar_categorias, axis=1)
@@ -196,6 +196,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
