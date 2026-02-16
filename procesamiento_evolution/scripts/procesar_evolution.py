@@ -11,7 +11,7 @@ from pathlib import Path
 # =========================
 BASE_DIR = Path(__file__).resolve().parent.parents[1]
 
-INPUT_PATH = BASE_DIR / "procesamiento_evolution" / "data" / "raw" / "evolution_data.xlsx"
+INPUT_PATH = BASE_DIR / "procesamiento_evolution" / "data" / "raw" / "evolution_data_raw.xlsx"
 OUTPUT_PATH = BASE_DIR / "procesamiento_evolution" / "data" / "processed" / "evolution_data_processed.csv"
 
 
