@@ -4,6 +4,7 @@ on:
   push:
     paths:
       - 'procesamiento_resources/data/raw/**'
+      - 'procesamiento_evolution/data/raw/**'
 
 jobs:
   build:
