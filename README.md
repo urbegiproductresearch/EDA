@@ -1,24 +1,26 @@
-# EDA
-# Análisis y Procesamiento de Tablas de TGN
+# 📊 EDA - Exploratory Data Analysis
 
-Este repositorio contiene el sistema de análisis y procesamiento automatizado de los datos exportados desde la plataforma web de TGN.
+Este repositorio contiene los análisis exploratorios realizados sobre los datos exportados desde la plataforma TGN.
 
-El objetivo principal es transformar el archivo CSV bruto descargado desde la web en un dataset estructurado, limpio y preparado para su uso en herramientas de Business Intelligence como Looker Studio.
+Actualmente se trabaja principalmente con datos de la tabla `resources` y la tabla `evolution`, utilizando como comunidad piloto KonektaLan.
 
----
+El objetivo del EDA es comprender la estructura real de los datos exportados, detectar columnas duplicadas o inconsistencias, analizar la calidad de los datos (valores nulos, formatos y categorías), explorar la distribución de tipos de perfil y categorías, e identificar oportunidades de mejora en la taxonomía.
 
-## 🔄 Flujo de trabajo
+Estructura del repositorio:
 
-El proceso funciona de la siguiente manera:
+EDA/
+├── notebooks/
+│   ├── eda_resources.ipynb
+│   ├── eda_evolution.ipynb
+├── data/
+│   ├── raw/
+│   ├── processed/
+└── README.md
 
-1. Se descarga el archivo CSV desde la web.
-2. Se sube el archivo como:
-   
-   procesamiento_resources/data/raw/resources_raw.csv o como sean los nombres de las tablas requeridas
+El notebook `eda_resources.ipynb` analiza la distribución de tipos de perfil, la estructura de categorías, posibles duplicados en columnas, validación de taxonomías y detección de inconsistencias en etiquetas.
 
-3. GitHub Actions ejecuta automáticamente el script de procesamiento.
-4. Se genera el archivo limpio en:
+El notebook `eda_evolution.ipynb` estudia la evolución temporal de registros, métricas de actividad, agrupaciones por comunidad y análisis de tendencias.
 
-   procesamiento_resources/data/processed/resources_processed.csv
+Como resultado del EDA se definió una estructura clara de supercategorías, se separó la información estructural de la contextual mediante columnas `extra[...]`, se mejoró la coherencia taxonómica y se diseñó el pipeline automatizado de procesamiento.
 
-5. Se descarga el archivo y se sube a Looker Studio para la elaboración de informes
+Este módulo sirve como base analítica para el diseño y evolución de los scripts de transformación.
