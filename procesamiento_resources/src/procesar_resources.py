@@ -31,7 +31,6 @@ TIPOS_ORGANIZACION_VALIDOS = [
     "Instituciones públicas"
 ]
 
-# Nuevo ámbito extendido
 ROLES_VALIDOS = [
     "En búsqueda de empleo",
     "Profesional sector privado",
@@ -76,7 +75,7 @@ CANALES_VALIDOS = [
 
 
 # =========================
-# DUPLICADOS
+# RESOLVER DUPLICADOS
 # =========================
 def resolver_columnas_duplicadas(df):
 
@@ -113,9 +112,9 @@ def resolver_columnas_duplicadas(df):
 
 
 # =========================
-# CLASIFICACION CATEGORIA CONTENIDO
+# CLASIFICACION SUPERIOR
 # =========================
-def clasificar_categoria_contenido(tipo_perfil, items):
+def clasificar_categoria_contenido(tipo_perfil):
 
     if tipo_perfil == "Evento":
         return "Evento"
@@ -153,9 +152,10 @@ def procesar_categorias(row):
     tipo_evento = []
     tipo_contenido = []
     info_noticia = []
+    info_extra_cat = []
     canales = []
 
-    categoria_contenido = clasificar_categoria_contenido(tipo_perfil, items)
+    categoria_contenido = clasificar_categoria_contenido(tipo_perfil)
 
     for item in items:
 
@@ -167,11 +167,11 @@ def procesar_categorias(row):
         elif item in EDADES_VALIDAS:
             edad = item
 
-        # Ámbito (Organizaciones)
+        # Ámbito
         elif tipo_perfil == "Organización" and item in TIPOS_ORGANIZACION_VALIDOS:
             ambito = item
 
-        # Rol (Perfil profesional)
+        # Rol
         elif tipo_perfil == "Perfil profesional" and item in ROLES_VALIDOS:
             rol = item
 
@@ -184,15 +184,20 @@ def procesar_categorias(row):
             canales.append(item)
 
         else:
-            # Sectores ahora incluyen profesionales y organizaciones
-            if tipo_perfil in ["Perfil profesional", "Organización", "Empresas"]:
+            # Contexto adicional noticia
+            if tipo_perfil == "Noticia":
+                info_noticia.append(item)
+
+            # Contexto adicional otros contenidos
+            elif tipo_perfil in TIPOS_CONTENIDO_GENERAL:
+                info_extra_cat.append(item)
+
+            # Sectores profesionales y organizaciones
+            elif tipo_perfil in ["Perfil profesional", "Organización"]:
                 sector.append(item)
 
             elif tipo_perfil == "Evento":
                 tipo_evento.append(item)
-
-            elif tipo_perfil == "Noticia":
-                info_noticia.append(item)
 
     return pd.Series({
         "supercategoria[Género]": genero,
@@ -202,10 +207,10 @@ def procesar_categorias(row):
         "supercategoria[Sector]": "; ".join(sector) if sector else np.nan,
         "supercategoria[tipo_de_evento]": "; ".join(tipo_evento) if tipo_evento else np.nan,
         "supercategoria[tipo_de_contenido]": "; ".join(tipo_contenido) if tipo_contenido else np.nan,
+        "supercategoria[Canales]": "; ".join(canales) if canales else np.nan,
         "extra[info_noticia]": "; ".join(info_noticia) if info_noticia else np.nan,
-        "extra[info_extra_cat_contenido]": np.nan,
-        "extra[categoria_contenido]": categoria_contenido,
-        "supercategoria[Canales]": "; ".join(canales) if canales else np.nan
+        "extra[info_extra_cat_contenido]": "; ".join(info_extra_cat) if info_extra_cat else np.nan,
+        "extra[categoria_contenido]": categoria_contenido
     })
 
 
@@ -224,6 +229,12 @@ def main():
     nuevas_columnas = df.apply(procesar_categorias, axis=1)
     df = pd.concat([df, nuevas_columnas], axis=1)
 
+    # Reordenar columnas: extra[...] siempre al final
+    columnas_extra = [col for col in df.columns if col.startswith("extra[")]
+    columnas_normales = [col for col in df.columns if not col.startswith("extra[")]
+
+    df = df[columnas_normales + columnas_extra]
+
     print("Guardando archivo procesado...")
     df.to_csv(OUTPUT_PATH, index=False)
 
@@ -232,4 +243,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
