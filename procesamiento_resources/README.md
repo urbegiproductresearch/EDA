@@ -1,78 +1,58 @@
-# Procesamiento de Resources
-Esta carpeta contiene el pipeline de transformación de datos para el archivo de resources exportado desde la web.
+# 🏷️ Procesamiento - Resources
 
----
+Este módulo procesa la tabla `resources` exportada desde la plataforma SaaS. Actualmente está adaptado a la comunidad piloto KonektaLan, con una estructura de supercategorías alineada con su modelo taxonómico.
 
-## 📂 Estructura
+El objetivo es transformar el CSV bruto en un dataset estructurado con supercategorías normalizadas, separación entre información estructural y contextual, clasificación coherente por tipo de perfil y columnas organizadas de forma clara.
 
-### data/raw/
-Contiene el archivo CSV original descargado desde la web:
+Estructura:
 
-resources_raw.csv
+procesamiento_resources/
+├── data/
+│   ├── raw/
+│   │   └── resources_raw.csv
+│   └── processed/
+│       └── resources_processed.csv
+├── src/
+│   └── procesar_resources.py
+└── requirements.txt
 
-Este archivo no debe modificarse manualmente.
+Funcionamiento del script:
 
----
+1. Carga y limpieza inicial. Se lee el CSV raw, se eliminan espacios en los nombres de columnas y se resuelven automáticamente posibles duplicados estructurales.
 
-### data/processed/
-Contiene el archivo generado automáticamente:
+2. Clasificación por supercategorías. El script analiza el campo “Tipo de perfil” y la columna “Categorías” para generar las siguientes columnas estructuradas:
 
-resources_processed.csv
+- supercategoria[Género]
+- supercategoria[Edad]
+- supercategoria[Ámbito]
+- supercategoria[Rol]
+- supercategoria[Sector]
+- supercategoria[tipo_de_evento]
+- supercategoria[tipo_de_contenido]
+- supercategoria[Canales]
 
-Este archivo es el dataset limpio y estructurado que se utiliza en Looker Studio.
+Estas columnas recogen únicamente valores estructurales definidos como válidos dentro del modelo taxonómico.
 
----
+3. Separación de información contextual. Se generan columnas adicionales que almacenan información no estructural:
 
-### scripts/
-Contiene el script principal:
+- extra[info_noticia]
+- extra[info_extra_cat_contenido]
+- extra[categoria_contenido]
 
-procesar_resources.py
+Estas columnas permiten mantener la taxonomía limpia sin perder información contextual relevante. El script garantiza que todas las columnas que comienzan por `extra[` se sitúan al final del dataset final.
 
-Este script:
+4. Exportación del archivo procesado en `data/processed/resources_processed.csv`.
 
-- Procesa la columna "Categorías"
-- Extrae edad (16-29, 30-44, 45-54, >55)
-- Clasifica género
-- Identifica tipo de organización
-- Identifica contexto profesional
-- Genera la variable `categoria_contenido`
-- Organiza sectores según tipo de perfil
+Lógica de clasificación:
 
----
+- Para perfiles profesionales se identifican Rol, Sector, Género y Edad.
+- Para organizaciones se clasifica Ámbito y Sector.
+- Para noticias se identifica el tipo de contenido y se separa la información contextual en `extra[info_noticia]`.
+- Para eventos se clasifica el tipo de evento.
+- Los canales se detectan en función del tipo de perfil y categorías asociadas.
 
-## 🔄 Funcionamiento
+Automatización:
 
-El script se ejecuta automáticamente mediante GitHub Actions cuando se actualiza el archivo:
+El procesamiento se ejecuta automáticamente mediante GitHub Actions cuando se sube un nuevo archivo raw a `procesamiento_resources/data/raw/`. El workflow instala dependencias, ejecuta el script, genera el CSV procesado y realiza commit automático si se detectan cambios.
 
-data/raw/resources_raw.csv
-
-No es necesario ejecutar el script manualmente.
-
----
-
-## 📊 Variables generadas
-
-El procesamiento genera las siguientes columnas estructuradas:
-
-- genero
-- edad
-- tipo_organizacion
-- contexto_profesional
-- categoria_contenido
-- sector_profesional
-- sector_noticia
-- sector_evento
-- tipo_contenido
-
-Todas las clasificaciones están basadas en listas de valores cerrados para garantizar coherencia y evitar categorías ambiguas.
-
----
-
-## 🚀 Escalabilidad
-
-La estructura permite:
-
-- Añadir nuevas reglas de clasificación
-- Incorporar validaciones de calidad
-- Versionar datos
-- Integrar futuras capas analíticas o predictivas
+El resultado final es un dataset estructurado, limpio y preparado para análisis segmentado, dashboards o explotación avanzada por comunidad.
