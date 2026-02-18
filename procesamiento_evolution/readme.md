@@ -1,8 +1,12 @@
-# 🔄 Procesamiento - Evolution
+# 🔄 Procesamiento – Evolution
 
-Este módulo procesa los datos exportados de la tabla `evolution` de la plataforma SaaS. Su objetivo es transformar el CSV bruto en un archivo limpio, estructurado y preparado para análisis posteriores.
+Este módulo procesa la tabla `evolution` exportada desde el panel del administrador de TGN (dentro de "DATOS", y tras haber filtrado por comunidad).
 
-Estructura:
+Su objetivo es transformar el excel bruto en un csv limpio y estructurado listo para análisis.
+
+---
+
+# 📂 Estructura
 
 procesamiento_evolution/
 ├── data/
@@ -12,20 +16,56 @@ procesamiento_evolution/
 │       └── evolution_data_processed.csv
 ├── scripts/
 │   └── procesar_evolution.py
-└── requirements.txt
+└── README.md
 
-Funcionamiento del script:
+---
 
-1. Carga del CSV raw ubicado en `data/raw/evolution_raw.csv`. Se limpian los nombres de columnas eliminando espacios innecesarios.
+# ⚙️ Cómo funciona el procesamiento
 
-2. Resolución de columnas duplicadas. Si el export genera columnas como `Nombre`, `Nombre.1`, `Nombre.2`, el script las reorganiza automáticamente conservando la principal y renombrando las adicionales como `_num`, `_num2` o `_text2` según corresponda. Esto evita conflictos en análisis posteriores.
+El script `procesar_evolution.py` realiza los siguientes pasos:
 
-3. Limpieza y transformación básica, incluyendo conversión de tipos y eliminación de posibles inconsistencias estructurales.
+1. Carga del CSV raw desde:
+   data/raw/evolution_raw.csv
 
-4. Exportación del resultado final en `data/processed/evolution_data_processed.csv`.
+2. Limpieza de nombres de columnas:
+   - Elimina espacios innecesarios
+   - Normaliza estructura
 
-Automatización:
+3. Resolución de columnas duplicadas:
+   Si el export genera columnas como:
+   Nombre
+   Nombre.1
+   Nombre.2
 
-El procesamiento se ejecuta automáticamente mediante GitHub Actions cuando se sube un nuevo archivo raw a la carpeta `procesamiento_evolution/data/raw/`. El workflow instala dependencias, ejecuta el script y realiza commit automático si se detectan cambios en el archivo procesado.
+   Se conserva la principal y se renombran las adicionales para evitar conflictos.
 
-El resultado final es un dataset limpio, consistente y listo para análisis temporal, generación de dashboards o modelos analíticos.
+4. Transformaciones básicas:
+   - Conversión de tipos
+   - Limpieza estructural
+
+5. Exportación final:
+   data/processed/evolution_data_processed.csv
+
+---
+
+# 🤖 Automatización
+
+Se ejecuta automáticamente mediante GitHub Actions cuando se sube un archivo a:
+
+procesamiento_evolution/data/raw/
+
+El workflow:
+
+- Instala dependencias
+- Ejecuta el script
+- Hace commit automático si hay cambios
+
+---
+
+# 🎯 Resultado
+
+Un dataset limpio, consistente y preparado para:
+
+- Análisis temporal
+- Dashboards
+- Modelos analíticos
