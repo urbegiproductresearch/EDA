@@ -1,26 +1,102 @@
-# 📊 EDA - Exploratory Data Analysis
+# 📊 EDA – Procesamiento de tablas de TGN (panel del administrador)
 
-Este repositorio contiene los análisis exploratorios realizados sobre los datos exportados desde la plataforma TGN.
+Este repositorio contiene el análisis exploratorio y los pipelines automatizados de transformación de datos exportados desde la plataforma de TGN.
 
-Actualmente se trabaja principalmente con datos de la tabla `resources` y la tabla `evolution`, utilizando como comunidad piloto KonektaLan.
+Actualmente se procesan dos grandes tablas:
 
-El objetivo del EDA es comprender la estructura real de los datos exportados, detectar columnas duplicadas o inconsistencias, analizar la calidad de los datos (valores nulos, formatos y categorías), explorar la distribución de tipos de perfil y categorías, e identificar oportunidades de mejora en la taxonomía.
+- `resources`
+- `evolution`
 
-Estructura del repositorio:
+Y múltiples comunidades, actualmente:
+- KonektaLan
+- Altxor Digital
+
+El sistema está diseñado con arquitectura multi-comunidad y es escalable para incorporar nuevas comunidades sin duplicar código.
+
+---
+
+# 🏗️ Arquitectura del repositorio
 
 EDA/
-├── notebooks/
-│   ├── eda_resources.ipynb
-│   ├── eda_evolution.ipynb
-├── data/
-│   ├── raw/
-│   ├── processed/
-└── README.md
+├── procesamiento_resources/
+├── procesamiento_evolution/
+├── EDA/
+└── .github/workflows/
 
-El notebook `eda_resources.ipynb` analiza la distribución de tipos de perfil, la estructura de categorías, posibles duplicados en columnas, validación de taxonomías y detección de inconsistencias en etiquetas.
+---
 
-El notebook `eda_evolution.ipynb` estudia la evolución temporal de registros, métricas de actividad, agrupaciones por comunidad y análisis de tendencias.
+# 🔹 1. EDA (Exploratory Data Analysis)
 
-Como resultado del EDA se definió una estructura clara de supercategorías, se separó la información estructural de la contextual mediante columnas `extra[...]`, se mejoró la coherencia taxonómica y se diseñó el pipeline automatizado de procesamiento.
+Carpeta: `EDA/`
 
-Este módulo sirve como base analítica para el diseño y evolución de los scripts de transformación.
+Contiene notebooks utilizados para:
+
+- Analizar estructura de datos exportados
+- Detectar duplicados y problemas estructurales
+- Validar taxonomías
+- Diseñar supercategorías
+- Ajustar reglas de clasificación
+
+El EDA fue la base para diseñar el sistema automatizado de procesamiento.
+
+---
+
+# 🔹 2. procesamiento_resources
+
+Procesa la tabla `resources`.
+
+Características principales:
+
+- Arquitectura multi-comunidad
+- Configuración independiente por comunidad
+- Generación automática de supercategorías
+- Separación entre información estructural y contextual
+- Commit automático mediante GitHub Actions
+
+Cada comunidad tiene:
+- Sus propios valores válidos
+- Sus propias supercategorías
+- Sus propias reglas de clasificación
+
+---
+
+# 🔹 3. procesamiento_evolution
+
+Procesa la tabla `evolution`.
+
+Funciona como pipeline estructural más simple:
+
+- Limpieza
+- Resolución de columnas duplicadas
+- Estandarización
+- Export automático
+
+---
+
+# 🤖 Automatización
+
+El repositorio utiliza GitHub Actions.
+
+Cada vez que se sube un nuevo archivo raw a:
+
+procesamiento_resources/data/raw/**
+procesamiento_evolution/data/raw/**
+
+Se ejecuta automáticamente:
+
+1. Procesamiento de resources (multi-comunidad)
+2. Procesamiento de evolution
+3. Commit automático si hay cambios
+
+---
+
+# 🎯 Objetivo del sistema
+
+Construir un motor de transformación de datos:
+
+- Escalable
+- Parametrizable
+- Multi-comunidad
+- Robusto ante cambios estructurales
+
+Este repositorio ya no es solo un conjunto de scripts, sino una arquitectura de transformación modular.
