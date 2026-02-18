@@ -1,77 +1,16 @@
-# =========================
-# IMPORTS
-# =========================
 import pandas as pd
 import numpy as np
 import re
 from pathlib import Path
 from collections import defaultdict
 
+# =========================
+# RUTAS BASE
+# =========================
 
-# =========================
-# RUTAS
-# =========================
 BASE_DIR = Path(__file__).resolve().parent.parents[1]
-
-INPUT_PATH = BASE_DIR / "procesamiento_resources" / "data" / "raw" / "resources_raw.csv"
-OUTPUT_PATH = BASE_DIR / "procesamiento_resources" / "data" / "processed" / "resources_processed.csv"
-
-
-# =========================
-# VALORES PERMITIDOS
-# =========================
-
-EDADES_VALIDAS = ["16-29", "30-44", "45-54", ">55"]
-
-GENEROS = ["Masculino", "Femenino", "No binario"]
-
-TIPOS_ORGANIZACION_VALIDOS = [
-    "Empresas",
-    "Entidades de formación",
-    "Instituciones públicas"
-]
-
-ROLES_VALIDOS = [
-    "En búsqueda de empleo",
-    "Profesional sector privado",
-    "Profesional sector público",
-    "Estudiante",
-    "Trabajador por cuenta propia",
-    "Agente de empleo",
-    "Recursos Humanos",
-    "Captación Talento"
-]
-
-TIPOS_CONTENIDO_GENERAL = [
-    "Noticia",
-    "Producto o servicio",
-    "Evento",
-    "Ayuda",
-    "Recurso web",
-    "Otros",
-    "Oferta de empleo"
-]
-
-TIPOS_NOTICIA_VALIDOS = [
-    "Noticias",
-    "Informes",
-    "Artículos",
-    "Casos de éxito",
-    "Premios y reconocimientos",
-    "Mesas Redondas"
-]
-
-CANALES_VALIDOS = [
-    "Trabajar en Euskadi",
-    "Emprendimiento y autoempleo",
-    "Oportunidades laborales",
-    "Formación",
-    "Guía de uso",
-    "Ayudas y subvenciones",
-    "Vivir en Euskadi",
-    "Historias de vida",
-    "Innovación en la empresa"
-]
+RAW_DIR = BASE_DIR / "data" / "raw"
+PROCESSED_DIR = BASE_DIR / "data" / "processed"
 
 
 # =========================
@@ -88,53 +27,16 @@ def resolver_columnas_duplicadas(df):
     nuevas_columnas = {}
 
     for base, columnas in grupos.items():
-
-        if len(columnas) == 1:
-            nuevas_columnas[columnas[0]] = base
-            continue
-
-        numericas = [c for c in columnas if pd.api.types.is_numeric_dtype(df[c])]
-        no_numericas = [c for c in columnas if not pd.api.types.is_numeric_dtype(df[c])]
-
-        if no_numericas:
-            nuevas_columnas[no_numericas[0]] = base
-        else:
-            nuevas_columnas[columnas[0]] = base
-
-        for idx, col in enumerate(numericas, start=1):
-            if idx == 1:
-                nuevas_columnas[col] = f"{base}_num"
-            else:
-                nuevas_columnas[col] = f"{base}_num{idx}"
+        nuevas_columnas[columnas[0]] = base
 
     df = df.rename(columns=nuevas_columnas)
     return df
 
 
 # =========================
-# CLASIFICACION SUPERIOR
+# PROCESAMIENTO GENERICO
 # =========================
-def clasificar_categoria_contenido(tipo_perfil):
-
-    if tipo_perfil == "Evento":
-        return "Evento"
-
-    if tipo_perfil == "Ayuda":
-        return "Ayuda"
-
-    if tipo_perfil == "Oferta de empleo":
-        return "Búsqueda de empleo"
-
-    if tipo_perfil == "Noticia":
-        return "Actualidad"
-
-    return np.nan
-
-
-# =========================
-# PROCESAMIENTO
-# =========================
-def procesar_categorias(row):
+def procesar_fila(row, config):
 
     categorias = row.get("Categorías", "")
     tipo_perfil = str(row.get("Tipo de perfil", "")).strip()
@@ -144,104 +46,100 @@ def procesar_categorias(row):
 
     items = [c.strip() for c in str(categorias).split(",") if c.strip()]
 
-    genero = np.nan
-    edad = np.nan
-    ambito = np.nan
-    rol = np.nan
-    sector = []
-    tipo_evento = []
-    tipo_contenido = []
-    info_noticia = []
-    info_extra_cat = []
-    canales = []
+    data = {}
 
-    categoria_contenido = clasificar_categoria_contenido(tipo_perfil)
+    # Base comunes
+    data["supercategoria[Género]"] = next((i for i in items if i in config["generos"]), np.nan)
 
-    for item in items:
+    edad_col = "supercategoria[Edad]"
+    if config["nombre_comunidad"] == "altxor":
+        edad_col = "supercategoria[Grupo_de_edad]"
 
-        # Género
-        if item in GENEROS:
-            genero = item
+    data[edad_col] = next((i for i in items if i in config["edades"]), np.nan)
 
-        # Edad
-        elif item in EDADES_VALIDAS:
-            edad = item
+    data["supercategoria[Rol]"] = next((i for i in items if i in config["roles"]), np.nan)
 
-        # Ámbito
-        elif tipo_perfil == "Organización" and item in TIPOS_ORGANIZACION_VALIDOS:
-            ambito = item
+    data["supercategoria[Ámbito]"] = next((i for i in items if i in config["ambitos"]), np.nan)
 
-        # Rol
-        elif tipo_perfil == "Perfil profesional" and item in ROLES_VALIDOS:
-            rol = item
+    data["supercategoria[Canales]"] = "; ".join([i for i in items if i in config["canales"]]) or np.nan
 
-        # Tipo noticia estructurada
-        elif item in TIPOS_NOTICIA_VALIDOS:
-            tipo_contenido.append(item)
+    data["supercategoria[tipo_de_evento]"] = "; ".join([i for i in items if i in config["tipos_evento"]]) or np.nan
 
-        # Canales
-        elif item in CANALES_VALIDOS:
-            canales.append(item)
+    data["supercategoria[tipo_de_contenido]"] = "; ".join([i for i in items if i in config["tipos_contenido"]]) or np.nan
 
-        else:
-            # Contexto adicional noticia
-            if tipo_perfil == "Noticia":
-                info_noticia.append(item)
+    # Solo Altxor
+    if config["areas"]:
+        if tipo_perfil in config["perfiles_con_area"]:
+            data["supercategoria[Área]"] = next((i for i in items if i in config["areas"]), np.nan)
 
-            # Contexto adicional otros contenidos
-            elif tipo_perfil in TIPOS_CONTENIDO_GENERAL:
-                info_extra_cat.append(item)
+    if config["formatos"]:
+        if tipo_perfil == "Recurso web":
+            data["supercategoria[Formato]"] = next((i for i in items if i in config["formatos"]), np.nan)
 
-            # Sectores profesionales y organizaciones
-            elif tipo_perfil in ["Perfil profesional", "Organización"]:
-                sector.append(item)
+    if config["tipos_espacio"]:
+        if tipo_perfil == "Productos o servicios":
+            data["supercategoria[tipo_de_espacio]"] = next((i for i in items if i in config["tipos_espacio"]), np.nan)
 
-            elif tipo_perfil == "Evento":
-                tipo_evento.append(item)
-
-    return pd.Series({
-        "supercategoria[Género]": genero,
-        "supercategoria[Edad]": edad,
-        "supercategoria[Ámbito]": ambito,
-        "supercategoria[Rol]": rol,
-        "supercategoria[Sector]": "; ".join(sector) if sector else np.nan,
-        "supercategoria[tipo_de_evento]": "; ".join(tipo_evento) if tipo_evento else np.nan,
-        "supercategoria[tipo_de_contenido]": "; ".join(tipo_contenido) if tipo_contenido else np.nan,
-        "supercategoria[Canales]": "; ".join(canales) if canales else np.nan,
-        "extra[info_noticia]": "; ".join(info_noticia) if info_noticia else np.nan,
-        "extra[info_extra_cat_contenido]": "; ".join(info_extra_cat) if info_extra_cat else np.nan,
-        "extra[categoria_contenido]": categoria_contenido
-    })
+    return pd.Series(data)
 
 
 # =========================
-# PIPELINE
+# MAIN MULTI-COMUNIDAD
 # =========================
 def main():
 
-    print("Cargando datos...")
-    df = pd.read_csv(INPUT_PATH)
-    df.columns = df.columns.str.strip()
+    PROCESSED_DIR.mkdir(parents=True, exist_ok=True)
 
-    df = resolver_columnas_duplicadas(df)
+    for carpeta in RAW_DIR.iterdir():
 
-    print("Procesando categorías...")
-    nuevas_columnas = df.apply(procesar_categorias, axis=1)
-    df = pd.concat([df, nuevas_columnas], axis=1)
+        if not carpeta.is_dir():
+            continue
 
-    # Reordenar columnas: extra[...] siempre al final
-    columnas_extra = [col for col in df.columns if col.startswith("extra[")]
-    columnas_normales = [col for col in df.columns if not col.startswith("extra[")]
+        comunidad = carpeta.name
 
-    df = df[columnas_normales + columnas_extra]
+        if comunidad == "konektalan":
+            from config.konektalan import CONFIG
+        elif comunidad == "altxor":
+            from config.altxor import CONFIG
+        else:
+            print(f"Comunidad desconocida: {comunidad}")
+            continue
 
-    print("Guardando archivo procesado...")
-    df.to_csv(OUTPUT_PATH, index=False)
+        archivo = carpeta / "resources_raw.csv"
 
-    print("Proceso finalizado correctamente")
+        if not archivo.exists():
+            print(f"No se encontró resources_raw.csv en {comunidad}")
+            continue
+
+        print(f"Procesando comunidad: {comunidad}")
+
+        df = pd.read_csv(archivo)
+        df.columns = df.columns.str.strip()
+
+        df = resolver_columnas_duplicadas(df)
+
+        nuevas_columnas = df.apply(lambda row: procesar_fila(row, CONFIG), axis=1)
+
+        df = pd.concat([df, nuevas_columnas], axis=1)
+
+        # Reordenar extras al final si existieran
+        columnas_extra = [c for c in df.columns if c.startswith("extra[")]
+        columnas_normales = [c for c in df.columns if not c.startswith("extra[")]
+
+        df = df[columnas_normales + columnas_extra]
+
+        output_file = PROCESSED_DIR / f"resources_processed_{comunidad}.csv"
+
+        df.to_csv(output_file, index=False)
+
+        print(f"Archivo generado: {output_file.name}")
+
+    print("Proceso completado.")
 
 
 if __name__ == "__main__":
     main()
+
+
 
 
