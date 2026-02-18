@@ -23,9 +23,12 @@ CONFIG = {
 
     "ambitos": [
         "Empresas",
-        "Entidades de formación",
-        "Instituciones públicas"
+        "Administración pública",
+        "Asociaciones",
+        "Centros de formación"
     ],
+
+    "sectores": [],
 
     "canales": [
         "Salud y autonomía",
@@ -93,4 +96,5 @@ CONFIG = {
         "Otros"
     ],
 }
+
 
