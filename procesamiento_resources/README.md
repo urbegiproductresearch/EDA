@@ -1,58 +1,140 @@
-# 🏷️ Procesamiento - Resources
+# 🏷️ Procesamiento – Resources (Arquitectura Multi-Comunidad)
 
-Este módulo procesa la tabla `resources` exportada desde la plataforma SaaS. Actualmente está adaptado a la comunidad piloto KonektaLan, con una estructura de supercategorías alineada con su modelo taxonómico.
+Este módulo procesa la tabla `resources` exportada desde el panel del administrador de TGN. (Se encuentra en "información" y se descarga tras haber filtrado por comunidad).
 
-El objetivo es transformar el CSV bruto en un dataset estructurado con supercategorías normalizadas, separación entre información estructural y contextual, clasificación coherente por tipo de perfil y columnas organizadas de forma clara.
+Está diseñado con arquitectura multi-comunidad y actualmente soporta:
 
-Estructura:
+- KonektaLan
+- Altxor Digital
+
+El sistema es escalable para añadir nuevas comunidades sin modificar el motor principal.
+
+---
+
+# 🏗️ Estructura
 
 procesamiento_resources/
+├── config/
+│   ├── konektalan.py
+│   ├── altxor.py
+│
 ├── data/
 │   ├── raw/
-│   │   └── resources_raw.csv
+│   │   ├── konektalan/
+│   │   │   └── resources_raw.csv
+│   │   └── altxor/
+│   │       └── resources_raw.csv
+│   │
 │   └── processed/
-│       └── resources_processed.csv
+│       ├── resources_processed_konektalan.csv
+│       └── resources_processed_altxor.csv
+│
 ├── src/
 │   └── procesar_resources.py
-└── requirements.txt
+└── README.md
 
-Funcionamiento del script:
+---
 
-1. Carga y limpieza inicial. Se lee el CSV raw, se eliminan espacios en los nombres de columnas y se resuelven automáticamente posibles duplicados estructurales.
+# 🧠 Cómo funciona el sistema
 
-2. Clasificación por supercategorías. El script analiza el campo “Tipo de perfil” y la columna “Categorías” para generar las siguientes columnas estructuradas:
+## 1️⃣ Separación por comunidad
+
+Cada comunidad tiene su propia carpeta en:
+
+data/raw/
+
+El script detecta automáticamente cada comunidad recorriendo las carpetas.
+
+---
+
+## 2️⃣ Configuración independiente
+
+Cada comunidad tiene un archivo de configuración:
+
+config/konektalan.py
+config/altxor.py
+
+En estos archivos se definen:
+
+- Valores válidos de Género
+- Rangos de Edad
+- Roles
+- Ámbitos
+- Sectores
+- Canales
+- Tipos de evento
+- Tipos de contenido
+- Áreas (si aplica)
+- Formatos (si aplica)
+- Tipos de espacio (si aplica)
+
+El motor no contiene valores hardcodeados.
+Todo se define en la configuración.
+
+---
+
+## 3️⃣ Procesamiento fila a fila
+
+El script:
+
+- Lee la columna "Categorías"
+- Analiza el "Tipo de perfil"
+- Detecta coincidencias con los valores definidos en config
+- Genera nuevas columnas de supercategorías
+
+Supercategorías estructurales:
 
 - supercategoria[Género]
-- supercategoria[Edad]
-- supercategoria[Ámbito]
+- supercategoria[Edad] o supercategoria[Grupo_de_edad]
 - supercategoria[Rol]
+- supercategoria[Ámbito]
 - supercategoria[Sector]
+- supercategoria[Canales]
 - supercategoria[tipo_de_evento]
 - supercategoria[tipo_de_contenido]
-- supercategoria[Canales]
+- supercategoria[Área] (solo Altxor)
+- supercategoria[Formato] (solo Altxor)
+- supercategoria[tipo_de_espacio] (solo Altxor)
 
-Estas columnas recogen únicamente valores estructurales definidos como válidos dentro del modelo taxonómico.
+Además genera:
 
-3. Separación de información contextual. Se generan columnas adicionales que almacenan información no estructural:
-
-- extra[info_noticia]
-- extra[info_extra_cat_contenido]
 - extra[categoria_contenido]
 
-Estas columnas permiten mantener la taxonomía limpia sin perder información contextual relevante. El script garantiza que todas las columnas que comienzan por `extra[` se sitúan al final del dataset final.
+---
 
-4. Exportación del archivo procesado en `data/processed/resources_processed.csv`.
+## 4️⃣ Exportación
 
-Lógica de clasificación:
+Se genera automáticamente un archivo por comunidad:
 
-- Para perfiles profesionales se identifican Rol, Sector, Género y Edad.
-- Para organizaciones se clasifica Ámbito y Sector.
-- Para noticias se identifica el tipo de contenido y se separa la información contextual en `extra[info_noticia]`.
-- Para eventos se clasifica el tipo de evento.
-- Los canales se detectan en función del tipo de perfil y categorías asociadas.
+resources_processed_konektalan.csv
+resources_processed_altxor.csv
 
-Automatización:
+---
 
-El procesamiento se ejecuta automáticamente mediante GitHub Actions cuando se sube un nuevo archivo raw a `procesamiento_resources/data/raw/`. El workflow instala dependencias, ejecuta el script, genera el CSV procesado y realiza commit automático si se detectan cambios.
+# 🤖 Automatización
 
-El resultado final es un dataset estructurado, limpio y preparado para análisis segmentado, dashboards o explotación avanzada por comunidad.
+GitHub Actions ejecuta automáticamente el procesamiento cuando se suben archivos a:
+
+procesamiento_resources/data/raw/**
+
+El workflow:
+
+1. Ejecuta el script
+2. Genera los CSV procesados
+3. Hace commit automático si hay cambios
+
+---
+
+# 🎯 Ventajas del diseño
+
+- No hay duplicación de código
+- Añadir nueva comunidad = crear nuevo archivo config
+- Arquitectura escalable
+- Separación clara entre motor y reglas de negocio
+- Mantenible a largo plazo
+
+---
+
+# 📌 Resultado final
+
+Un motor de clasificación taxonómica multi-comunidad, parametrizable y preparado para crecer.
