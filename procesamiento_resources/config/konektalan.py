@@ -2,7 +2,6 @@ CONFIG = {
 
     "nombre_comunidad": "konektalan",
 
-    # Supercategorías base
     "generos": ["Masculino", "Femenino", "No binario"],
 
     "edades": ["16-29", "30-44", "45-54", ">55"],
@@ -21,7 +20,42 @@ CONFIG = {
     "ambitos": [
         "Empresas",
         "Entidades de formación",
-        "Instituciones públicas"
+        "Instituciones públicas",
+        "Organizaciones"
+    ],
+
+    "sectores": [
+        "Actividades físicas-deportivas",
+        "Actividades artísticas, recreativas y de entretenimiento",
+        "Administración y gestión (oficinas y despachos)",
+        "Agricultura y ganadería",
+        "Comercio",
+        "Construcción e industrias extractivas",
+        "Economía social",
+        "Educación",
+        "Energía y agua",
+        "Finanzas y seguros",
+        "Función Pública",
+        "Grandes almacenes",
+        "Hostelería, Restauración y Turismo",
+        "Industria alimentaria",
+        "Industria química y vidrio",
+        "Información, Comunicación y Artes Gráficas",
+        "Ingeniería mecánica y eléctrica",
+        "Industria de madera y corcho",
+        "Industrias graficas",
+        "Industrias manufactureras diversas",
+        "Metal",
+        "Pesca y Acuicultura",
+        "Sanidad",
+        "Servicios a las empresas",
+        "Servicios Medioambientales",
+        "Servicios a la comunidad y personales",
+        "Telecomunicaciones",
+        "Textil, confección y piel",
+        "Transporte y logística",
+        "Investigación",
+        "Otros"
     ],
 
     "canales": [
@@ -36,7 +70,11 @@ CONFIG = {
         "Innovación en la empresa"
     ],
 
-    "tipos_evento": [],
+    "tipos_evento": [
+        "Congreso",
+        "Feria de empleo",
+        "Jornada"
+    ],
 
     "tipos_contenido": [
         "Noticias",
@@ -47,13 +85,10 @@ CONFIG = {
         "Mesas Redondas"
     ],
 
-    # Solo Altxor usa estas
     "areas": [],
     "formatos": [],
     "tipos_espacio": [],
-
-    # Perfiles que generan Área
     "perfiles_con_area": [],
-
 }
+
 
