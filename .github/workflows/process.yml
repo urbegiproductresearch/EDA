@@ -11,20 +11,29 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # -------------------------
+      # CHECKOUT
+      # -------------------------
       - name: Checkout repo
         uses: actions/checkout@v3
 
+      # -------------------------
+      # PYTHON SETUP
+      # -------------------------
       - name: Setup Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.10'
 
+      # -------------------------
+      # INSTALL DEPENDENCIES
+      # -------------------------
       - name: Install dependencies
         run: |
           pip install pandas openpyxl
 
       # -------------------------
-      # PROCESAR RESOURCES
+      # PROCESAR RESOURCES (MULTI-COMUNIDAD)
       # -------------------------
       - name: Run resources processing
         run: |
@@ -45,12 +54,14 @@ jobs:
           git config user.name "github-actions"
           git config user.email "actions@github.com"
 
-          git add procesamiento_resources/data/processed/resources_processed.csv
-          git add procesamiento_evolution/data/processed/evolution_data_processed.csv
+          # Añadir todos los CSV generados dinámicamente
+          git add procesamiento_resources/data/processed/*.csv
+          git add procesamiento_evolution/data/processed/*.csv
 
           if git diff --cached --quiet; then
             echo "No changes to commit"
           else
-            git commit -m "Auto update processed files"
+            git commit -m "Auto update processed data"
             git push
           fi
+
