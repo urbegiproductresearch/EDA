@@ -6,21 +6,14 @@ from collections import defaultdict
 import sys
 
 # =========================
-# RUTAS BASE CORRECTAS
+# RUTAS BASE
 # =========================
 
-# Este archivo está en:
-# procesamiento_resources/src/procesar_resources.py
-
 CURRENT_FILE = Path(__file__).resolve()
-
-# Subimos 2 niveles → procesamiento_resources/
 BASE_DIR = CURRENT_FILE.parent.parent
 
 RAW_DIR = BASE_DIR / "data" / "raw"
 PROCESSED_DIR = BASE_DIR / "data" / "processed"
-
-CONFIG_DIR = BASE_DIR / "config"
 
 sys.path.append(str(BASE_DIR))
 
@@ -46,7 +39,24 @@ def resolver_columnas_duplicadas(df):
 
 
 # =========================
-# PROCESAMIENTO GENERICO
+# CLASIFICACION CONTENIDO
+# =========================
+def clasificar_categoria_contenido(tipo_perfil):
+
+    if tipo_perfil == "Evento":
+        return "Evento"
+
+    if tipo_perfil == "Ayuda":
+        return "Ayuda"
+
+    if tipo_perfil in ["Noticia", "Noticias"]:
+        return "Actualidad"
+
+    return "Actualidad"
+
+
+# =========================
+# PROCESAMIENTO FILA
 # =========================
 def procesar_fila(row, config):
 
@@ -60,67 +70,98 @@ def procesar_fila(row, config):
 
     data = {}
 
-    # Género
+    # =========================
+    # GENERO
+    # =========================
     data["supercategoria[Género]"] = next(
         (i for i in items if i in config["generos"]),
         np.nan
     )
 
-    # Edad / Grupo de edad
+    # =========================
+    # EDAD
+    # =========================
+    edad_col = "supercategoria[Edad]"
     if config["nombre_comunidad"] == "altxor":
         edad_col = "supercategoria[Grupo_de_edad]"
-    else:
-        edad_col = "supercategoria[Edad]"
 
     data[edad_col] = next(
         (i for i in items if i in config["edades"]),
         np.nan
     )
 
-    # Rol
+    # =========================
+    # ROL
+    # =========================
     data["supercategoria[Rol]"] = next(
         (i for i in items if i in config["roles"]),
         np.nan
     )
 
-    # Ámbito
+    # =========================
+    # ÁMBITO
+    # =========================
     data["supercategoria[Ámbito]"] = next(
         (i for i in items if i in config["ambitos"]),
         np.nan
     )
 
-    # Canales
+    # =========================
+    # SECTOR (solo si definido)
+    # =========================
+    if config.get("sectores"):
+        sectores = [i for i in items if i in config["sectores"]]
+        data["supercategoria[Sector]"] = "; ".join(sectores) if sectores else np.nan
+
+    # =========================
+    # CANALES
+    # =========================
     canales = [i for i in items if i in config["canales"]]
     data["supercategoria[Canales]"] = "; ".join(canales) if canales else np.nan
 
-    # Tipo evento
+    # =========================
+    # TIPO EVENTO
+    # =========================
     tipos_evento = [i for i in items if i in config["tipos_evento"]]
     data["supercategoria[tipo_de_evento]"] = "; ".join(tipos_evento) if tipos_evento else np.nan
 
-    # Tipo contenido
+    # =========================
+    # TIPO CONTENIDO
+    # =========================
     tipos_contenido = [i for i in items if i in config["tipos_contenido"]]
     data["supercategoria[tipo_de_contenido]"] = "; ".join(tipos_contenido) if tipos_contenido else np.nan
 
-    # Área (solo Altxor)
-    if config["areas"] and tipo_perfil in config["perfiles_con_area"]:
+    # =========================
+    # AREA (solo Altxor)
+    # =========================
+    if config.get("areas") and tipo_perfil in config.get("perfiles_con_area", []):
         data["supercategoria[Área]"] = next(
             (i for i in items if i in config["areas"]),
             np.nan
         )
 
-    # Formato (solo Altxor)
-    if config["formatos"] and tipo_perfil == "Recurso web":
+    # =========================
+    # FORMATO (solo Altxor)
+    # =========================
+    if config.get("formatos") and tipo_perfil == "Recurso web":
         data["supercategoria[Formato]"] = next(
             (i for i in items if i in config["formatos"]),
             np.nan
         )
 
-    # Tipo de espacio (solo Altxor)
-    if config["tipos_espacio"] and tipo_perfil == "Productos o servicios":
+    # =========================
+    # TIPO DE ESPACIO (solo Altxor)
+    # =========================
+    if config.get("tipos_espacio") and tipo_perfil in ["Productos o servicios", "Producto o servicio"]:
         data["supercategoria[tipo_de_espacio]"] = next(
             (i for i in items if i in config["tipos_espacio"]),
             np.nan
         )
+
+    # =========================
+    # EXTRA CATEGORIA CONTENIDO
+    # =========================
+    data["extra[categoria_contenido]"] = clasificar_categoria_contenido(tipo_perfil)
 
     return pd.Series(data)
 
@@ -129,8 +170,6 @@ def procesar_fila(row, config):
 # MAIN MULTI-COMUNIDAD
 # =========================
 def main():
-
-    print(f"Buscando raw en: {RAW_DIR}")
 
     PROCESSED_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -141,7 +180,7 @@ def main():
 
         comunidad = carpeta.name
 
-        print(f"\nDetectada comunidad: {comunidad}")
+        print(f"\nProcesando comunidad: {comunidad}")
 
         if comunidad == "konektalan":
             from config.konektalan import CONFIG
@@ -156,8 +195,6 @@ def main():
         if not archivo.exists():
             print(f"No se encontró resources_raw.csv en {comunidad}")
             continue
-
-        print(f"Procesando archivo: {archivo}")
 
         df = pd.read_csv(archivo)
         df.columns = df.columns.str.strip()
@@ -182,6 +219,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
