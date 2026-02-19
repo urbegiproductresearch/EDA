@@ -15,6 +15,33 @@ OUTPUT_FILE = PROCESSED_DIR / "evolution_data_processed.csv"
 
 
 # =========================
+# FUNCIÓN PARA ELIMINAR MESES DUPLICADOS
+# =========================
+def unificar_columna_mes(df):
+
+    # Detectar columnas tipo mes_*
+    columnas_mes = [col for col in df.columns if col.lower().startswith("mes_")]
+
+    if not columnas_mes:
+        return df
+
+    # Tomamos la primera como referencia
+    columna_principal = columnas_mes[0]
+
+    # Crear columna mes general
+    df["mes"] = df[columna_principal]
+
+    # Eliminar todas las columnas mes_*
+    df = df.drop(columns=columnas_mes)
+
+    # Mover mes al inicio
+    columnas_finales = ["mes"] + [col for col in df.columns if col != "mes"]
+    df = df[columnas_finales]
+
+    return df
+
+
+# =========================
 # MAIN
 # =========================
 def main():
@@ -30,46 +57,36 @@ def main():
     archivo = archivos_excel[0]
     print(f"Leyendo archivo: {archivo.name}")
 
-    # Leer sin cabecera para poder reconstruirla
-    df_raw = pd.read_excel(archivo, sheet_name="Datos", header=None)
+    # Leer Excel con dos filas de encabezado
+    df_raw = pd.read_excel(
+        archivo,
+        sheet_name="Datos",
+        header=[0, 1]
+    )
 
-    # Fila 0 → Categorías (Usuarios, Descargas App, etc.)
-    categorias = df_raw.iloc[0]
-
-    # Fila 1 → Mes / Dato / Acum.
-    subheaders = df_raw.iloc[1]
-
-    # Datos reales desde fila 2
-    df = df_raw.iloc[2:].reset_index(drop=True)
-
+    # Construir nombres de columnas combinando los dos niveles
     nuevas_columnas = []
 
-    for i in range(len(subheaders)):
+    for categoria, subheader in df_raw.columns:
 
-        categoria = str(categorias[i]).strip()
-        subheader = str(subheaders[i]).strip()
+        categoria = str(categoria).strip()
+        subheader = str(subheader).strip()
 
         if subheader.lower() == "mes":
-            nuevas_columnas.append("mes")
+            nuevas_columnas.append(f"mes_{categoria.lower().replace(' ', '_')}")
         else:
-            nombre_categoria = categoria.lower().replace(" ", "_")
-            nombre_sub = subheader.replace(".", "").strip()
-            nuevas_columnas.append(f"{nombre_sub}_{nombre_categoria}")
+            categoria_limpia = categoria.lower().replace(" ", "_")
+            sub_limpio = subheader.replace(".", "").strip()
+            nuevas_columnas.append(f"{sub_limpio}_{categoria_limpia}")
 
-    df.columns = nuevas_columnas
+    df_raw.columns = nuevas_columnas
 
-    # Eliminar posibles columnas mes duplicadas
-    columnas_mes = [col for col in df.columns if col == "mes"]
+    # Aplicar eliminación de meses duplicados
+    df_final = unificar_columna_mes(df_raw)
 
-    if len(columnas_mes) > 1:
-        df = df.loc[:, ~df.columns.duplicated()]
-
-    # Mover mes a primera posición
-    columnas_finales = ["mes"] + [col for col in df.columns if col != "mes"]
-    df = df[columnas_finales]
-
+    # Guardar
     PROCESSED_DIR.mkdir(parents=True, exist_ok=True)
-    df.to_csv(OUTPUT_FILE, index=False)
+    df_final.to_csv(OUTPUT_FILE, index=False)
 
     print("Archivo procesado correctamente.")
     print(f"Generado: {OUTPUT_FILE.name}")
