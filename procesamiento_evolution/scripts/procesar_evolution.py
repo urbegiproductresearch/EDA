@@ -15,28 +15,36 @@ OUTPUT_FILE = PROCESSED_DIR / "evolution_data_processed.csv"
 
 
 # =========================
-# FUNCIÓN PARA ELIMINAR MESES DUPLICADOS
+# ELIMINAR MESES DUPLICADOS
 # =========================
 def unificar_columna_mes(df):
 
-    # Detectar columnas tipo mes_*
     columnas_mes = [col for col in df.columns if col.lower().startswith("mes_")]
 
     if not columnas_mes:
         return df
 
-    # Tomamos la primera como referencia
     columna_principal = columnas_mes[0]
 
-    # Crear columna mes general
     df["mes"] = df[columna_principal]
 
-    # Eliminar todas las columnas mes_*
     df = df.drop(columns=columnas_mes)
 
-    # Mover mes al inicio
     columnas_finales = ["mes"] + [col for col in df.columns if col != "mes"]
     df = df[columnas_finales]
+
+    return df
+
+
+# =========================
+# ELIMINAR COLUMNAS ACUM1
+# =========================
+def eliminar_acum1(df):
+
+    columnas_acum1 = [col for col in df.columns if col.startswith("Acum1_")]
+
+    if columnas_acum1:
+        df = df.drop(columns=columnas_acum1)
 
     return df
 
@@ -57,14 +65,12 @@ def main():
     archivo = archivos_excel[0]
     print(f"Leyendo archivo: {archivo.name}")
 
-    # Leer Excel con dos filas de encabezado
     df_raw = pd.read_excel(
         archivo,
         sheet_name="Datos",
         header=[0, 1]
     )
 
-    # Construir nombres de columnas combinando los dos niveles
     nuevas_columnas = []
 
     for categoria, subheader in df_raw.columns:
@@ -81,10 +87,12 @@ def main():
 
     df_raw.columns = nuevas_columnas
 
-    # Aplicar eliminación de meses duplicados
+    # Unificar mes
     df_final = unificar_columna_mes(df_raw)
 
-    # Guardar
+    # Eliminar columnas Acum1_
+    df_final = eliminar_acum1(df_final)
+
     PROCESSED_DIR.mkdir(parents=True, exist_ok=True)
     df_final.to_csv(OUTPUT_FILE, index=False)
 
@@ -94,4 +102,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
