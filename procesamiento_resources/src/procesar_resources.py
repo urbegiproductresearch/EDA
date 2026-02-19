@@ -4,7 +4,6 @@ import re
 from pathlib import Path
 from collections import defaultdict
 import sys
-import chardet
 
 # =========================
 # RUTAS BASE
@@ -24,13 +23,24 @@ sys.path.append(str(BASE_DIR))
 # =========================
 def leer_csv_seguro(path):
 
-    with open(path, "rb") as f:
-        resultado = chardet.detect(f.read(100000))
-        encoding_detectado = resultado["encoding"]
+    encodings_a_probar = [
+        "utf-8",
+        "utf-8-sig",
+        "cp1252",
+        "latin1"
+    ]
 
-    print(f"Encoding detectado para {path.name}: {encoding_detectado}")
+    for enc in encodings_a_probar:
+        try:
+            print(f"Probando encoding: {enc}")
+            df = pd.read_csv(path, encoding=enc)
+            print(f"✅ Funciona con: {enc}")
+            return df
+        except UnicodeDecodeError:
+            print(f"❌ Fallo con: {enc}")
+            continue
 
-    return pd.read_csv(path, encoding=encoding_detectado)
+    raise ValueError("No se pudo leer el archivo con ningún encoding probado.")
 
 
 # =========================
@@ -237,12 +247,6 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
-
-
-
-
 
 
 
