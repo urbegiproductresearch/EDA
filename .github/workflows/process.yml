@@ -28,31 +28,19 @@ jobs:
         run: |
           pip install pandas openpyxl
 
-      # -------------------------
-      # PROCESAR RESOURCES
-      # -------------------------
       - name: Run resources processing
         run: |
           python procesamiento_resources/src/procesar_resources.py
 
-      # -------------------------
-      # PROCESAR EVOLUTION
-      # -------------------------
       - name: Run evolution processing
         run: |
           python procesamiento_evolution/scripts/procesar_evolution.py
 
-      # -------------------------
-      # MOSTRAR ESTADO (DEBUG)
-      # -------------------------
-      - name: Show git status
+      - name: Ver archivos generados
         run: |
-          echo "Estado antes de añadir:"
-          git status
+          echo "ESTRUCTURA COMPLETA:"
+          ls -R
 
-      # -------------------------
-      # COMMIT SI HAY CAMBIOS
-      # -------------------------
       - name: Commit processed files
         run: |
           git config user.name "github-actions"
@@ -60,12 +48,14 @@ jobs:
 
           git add .
 
+          echo "Estado después de add:"
+          git status
+
           if git diff --cached --quiet; then
             echo "No changes to commit"
           else
             git commit -m "Auto update processed files"
             git push origin HEAD:${{ github.ref }}
           fi
-
 
 
