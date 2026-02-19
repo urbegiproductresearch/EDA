@@ -10,9 +10,14 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
+    permissions:
+      contents: write
+
     steps:
       - name: Checkout repo
         uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
 
       - name: Setup Python
         uses: actions/setup-python@v4
@@ -38,6 +43,14 @@ jobs:
           python procesamiento_evolution/scripts/procesar_evolution.py
 
       # -------------------------
+      # MOSTRAR ESTADO (DEBUG)
+      # -------------------------
+      - name: Show git status
+        run: |
+          echo "Estado antes de añadir:"
+          git status
+
+      # -------------------------
       # COMMIT SI HAY CAMBIOS
       # -------------------------
       - name: Commit processed files
@@ -51,7 +64,8 @@ jobs:
             echo "No changes to commit"
           else
             git commit -m "Auto update processed files"
-            git push
+            git push origin HEAD:${{ github.ref }}
           fi
+
 
 
