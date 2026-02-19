@@ -4,6 +4,7 @@ import re
 from pathlib import Path
 from collections import defaultdict
 import sys
+import chardet
 
 # =========================
 # RUTAS BASE
@@ -16,6 +17,20 @@ RAW_DIR = BASE_DIR / "data" / "raw"
 PROCESSED_DIR = BASE_DIR / "data" / "processed"
 
 sys.path.append(str(BASE_DIR))
+
+
+# =========================
+# LECTOR ROBUSTO DE CSV
+# =========================
+def leer_csv_seguro(path):
+
+    with open(path, "rb") as f:
+        resultado = chardet.detect(f.read(100000))
+        encoding_detectado = resultado["encoding"]
+
+    print(f"Encoding detectado para {path.name}: {encoding_detectado}")
+
+    return pd.read_csv(path, encoding=encoding_detectado)
 
 
 # =========================
@@ -79,7 +94,7 @@ def procesar_fila(row, config):
     )
 
     # =========================
-    # EDAD
+    # EDAD / GRUPO EDAD
     # =========================
     edad_col = "supercategoria[Edad]"
     if config["nombre_comunidad"] == "altxor":
@@ -107,7 +122,7 @@ def procesar_fila(row, config):
     )
 
     # =========================
-    # SECTOR (solo si definido)
+    # SECTOR
     # =========================
     if config.get("sectores"):
         sectores = [i for i in items if i in config["sectores"]]
@@ -132,7 +147,7 @@ def procesar_fila(row, config):
     data["supercategoria[tipo_de_contenido]"] = "; ".join(tipos_contenido) if tipos_contenido else np.nan
 
     # =========================
-    # AREA (solo Altxor)
+    # ÁREA (solo si aplica)
     # =========================
     if config.get("areas") and tipo_perfil in config.get("perfiles_con_area", []):
         data["supercategoria[Área]"] = next(
@@ -173,13 +188,16 @@ def main():
 
     PROCESSED_DIR.mkdir(parents=True, exist_ok=True)
 
+    if not RAW_DIR.exists():
+        print("No existe carpeta raw.")
+        return
+
     for carpeta in RAW_DIR.iterdir():
 
         if not carpeta.is_dir():
             continue
 
         comunidad = carpeta.name
-
         print(f"\nProcesando comunidad: {comunidad}")
 
         if comunidad == "konektalan":
@@ -196,9 +214,10 @@ def main():
             print(f"No se encontró resources_raw.csv en {comunidad}")
             continue
 
-        df = pd.read_csv(archivo)
-        df.columns = df.columns.str.strip()
+        # 👇 LECTURA SEGURA
+        df = leer_csv_seguro(archivo)
 
+        df.columns = df.columns.str.strip()
         df = resolver_columnas_duplicadas(df)
 
         nuevas_columnas = df.apply(
@@ -209,7 +228,6 @@ def main():
         df = pd.concat([df, nuevas_columnas], axis=1)
 
         output_file = PROCESSED_DIR / f"resources_processed_{comunidad}.csv"
-
         df.to_csv(output_file, index=False)
 
         print(f"Generado: {output_file.name}")
@@ -219,6 +237,8 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
 
 
 
