@@ -2,17 +2,18 @@ import pandas as pd
 import re
 from pathlib import Path
 from collections import defaultdict
+import os
 
 
 # =========================
-# RUTAS BASE
+# RUTAS BASE (ROBUSTAS)
 # =========================
 
-CURRENT_FILE = Path(__file__).resolve()
-BASE_DIR = CURRENT_FILE.parent.parent
+# Directorio raíz del repo (funciona en local y en GitHub Actions)
+REPO_ROOT = Path(os.getcwd())
 
-RAW_DIR = BASE_DIR / "data" / "raw"
-PROCESSED_DIR = BASE_DIR / "data" / "processed"
+RAW_DIR = REPO_ROOT / "procesamiento_evolution" / "data" / "raw"
+PROCESSED_DIR = REPO_ROOT / "procesamiento_evolution" / "data" / "processed"
 OUTPUT_FILE = PROCESSED_DIR / "evolution_data_processed.csv"
 
 
@@ -45,13 +46,12 @@ def unificar_columna_mes(df):
     columnas_mes = [col for col in df.columns if col.lower().startswith("mes")]
 
     if not columnas_mes:
-        print("No se encontraron columnas de mes.")
+        print("⚠️ No se encontraron columnas que empiecen por 'mes'.")
         return df
 
     columna_principal = columnas_mes[0]
 
     df["mes"] = df[columna_principal]
-
     df = df.drop(columns=columnas_mes)
 
     columnas_finales = ["mes"] + [col for col in df.columns if col != "mes"]
@@ -65,23 +65,24 @@ def unificar_columna_mes(df):
 # =========================
 def main():
 
-    print("Procesando evolution data...")
+    print("=== INICIO PROCESAMIENTO EVOLUTION ===")
+    print(f"Directorio actual: {REPO_ROOT}")
+    print(f"Buscando CSV en: {RAW_DIR}")
 
     if not RAW_DIR.exists():
-        print("No existe la carpeta raw.")
+        print("❌ No existe la carpeta raw.")
         return
 
     archivos_csv = list(RAW_DIR.glob("*.csv"))
 
     if not archivos_csv:
-        print("No se encontraron archivos CSV en raw.")
+        print("❌ No se encontraron archivos CSV en raw.")
         return
 
-    print(f"Archivos detectados: {[f.name for f in archivos_csv]}")
+    print(f"✔ Archivos detectados: {[f.name for f in archivos_csv]}")
 
     PROCESSED_DIR.mkdir(parents=True, exist_ok=True)
 
-    # Leer y concatenar todos los CSV encontrados
     dfs = []
     for archivo in archivos_csv:
         print(f"Leyendo {archivo.name}")
@@ -91,19 +92,15 @@ def main():
 
     df = pd.concat(dfs, ignore_index=True)
 
-    # Resolver duplicados
     df = resolver_columnas_duplicadas(df)
-
-    # Unificar columna mes
     df = unificar_columna_mes(df)
 
-    # Guardar archivo procesado
     df.to_csv(OUTPUT_FILE, index=False)
 
-    print("Archivo procesado correctamente.")
-    print(f"Generado: {OUTPUT_FILE.name}")
+    print("✔ Archivo procesado correctamente.")
+    print(f"Generado en: {OUTPUT_FILE}")
+    print("=== FIN PROCESAMIENTO EVOLUTION ===")
 
 
 if __name__ == "__main__":
     main()
-
