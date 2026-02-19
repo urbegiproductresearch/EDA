@@ -26,7 +26,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install pandas openpyxl
+          pip install -r procesamiento_resources/requirements.txt
 
       - name: Run resources processing
         run: |
