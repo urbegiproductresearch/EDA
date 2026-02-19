@@ -22,6 +22,7 @@ def unificar_columna_mes(df):
     columnas_mes = [col for col in df.columns if col.lower().startswith("mes_")]
 
     if not columnas_mes:
+        print("No se encontraron columnas mes_*")
         return df
 
     columna_principal = columnas_mes[0]
@@ -29,8 +30,12 @@ def unificar_columna_mes(df):
     # Crear columna mes general
     df["mes"] = df[columna_principal]
 
-    # Forzar tipo datetime
-    df["mes"] = pd.to_datetime(df["mes"], errors="coerce")
+    # Intentar conversión segura a datetime
+    try:
+        df["mes"] = pd.to_datetime(df["mes"], errors="raise")
+        print("Columna mes convertida a datetime correctamente.")
+    except Exception:
+        print("No se pudo convertir mes a datetime. Se mantiene como texto.")
 
     # Eliminar columnas mes_*
     df = df.drop(columns=columnas_mes)
@@ -50,6 +55,7 @@ def eliminar_acum1(df):
     columnas_acum1 = [col for col in df.columns if col.startswith("Acum1_")]
 
     if columnas_acum1:
+        print(f"Eliminando columnas duplicadas: {columnas_acum1}")
         df = df.drop(columns=columnas_acum1)
 
     return df
@@ -65,20 +71,20 @@ def main():
     archivos_excel = list(RAW_DIR.glob("*.xlsx"))
 
     if not archivos_excel:
-        print("No se encontraron archivos Excel.")
+        print("No se encontraron archivos Excel en raw.")
         return
 
     archivo = archivos_excel[0]
     print(f"Leyendo archivo: {archivo.name}")
 
-    # Leer hoja "Datos" con encabezado multinivel
+    # Leer hoja Datos con encabezado multinivel
     df_raw = pd.read_excel(
         archivo,
         sheet_name="Datos",
         header=[0, 1]
     )
 
-    # Construcción limpia de nombres de columnas
+    # Construcción de nombres de columnas
     nuevas_columnas = []
 
     for categoria, subheader in df_raw.columns:
@@ -107,11 +113,8 @@ def main():
 
     print("Archivo procesado correctamente.")
     print(f"Generado: {OUTPUT_FILE.name}")
-    print(f"Tipo columna mes: {df_final['mes'].dtype}")
+    print(f"Tipo columna mes final: {df_final['mes'].dtype}")
 
 
 if __name__ == "__main__":
     main()
-
-
-
