@@ -5,6 +5,7 @@ on:
     paths:
       - 'procesamiento_resources/data/raw/**'
       - 'procesamiento_evolution/data/raw/**'
+      - 'procesamiento_users/data/raw/**'
 
 jobs:
   build:
@@ -35,6 +36,10 @@ jobs:
       - name: Run evolution processing
         run: |
           python procesamiento_evolution/scripts/procesar_evolution.py
+
+      - name: Run users processing
+        run: |
+          python procesamiento_users/src/procesar_users.py
 
       - name: Ver archivos generados
         run: |
