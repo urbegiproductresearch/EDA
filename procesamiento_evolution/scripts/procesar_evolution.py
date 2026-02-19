@@ -1,80 +1,97 @@
-# =========================
-# IMPORTS
-# =========================
 import pandas as pd
-import numpy as np
+import re
 from pathlib import Path
+from collections import defaultdict
 
 
 # =========================
-# RUTAS
+# RUTAS BASE
 # =========================
-BASE_DIR = Path(__file__).resolve().parent.parents[1]
 
-INPUT_PATH = BASE_DIR / "procesamiento_evolution" / "data" / "raw" / "evolution_data_raw.xlsx"
-OUTPUT_PATH = BASE_DIR / "procesamiento_evolution" / "data" / "processed" / "evolution_data_processed.csv"
+CURRENT_FILE = Path(__file__).resolve()
+BASE_DIR = CURRENT_FILE.parent.parent
 
-
-# =========================
-# FUNCIÓN PARA LIMPIAR NOMBRE CATEGORIA
-# =========================
-def limpiar_texto(texto):
-    texto = str(texto).strip().lower()
-    texto = texto.replace(" ", "_")
-    texto = texto.replace(".", "")
-    return texto
+RAW_FILE = BASE_DIR / "data" / "raw" / "evolution_raw.csv"
+PROCESSED_DIR = BASE_DIR / "data" / "processed"
+OUTPUT_FILE = PROCESSED_DIR / "evolution_data_processed.csv"
 
 
 # =========================
-# PIPELINE
+# RESOLVER COLUMNAS DUPLICADAS
+# =========================
+def resolver_columnas_duplicadas(df):
+
+    grupos = defaultdict(list)
+
+    for col in df.columns:
+        base = re.sub(r"\.\d+$", "", col)
+        grupos[base].append(col)
+
+    nuevas_columnas = {}
+
+    for base, columnas in grupos.items():
+        nuevas_columnas[columnas[0]] = base
+
+    df = df.rename(columns=nuevas_columnas)
+
+    return df
+
+
+# =========================
+# UNIFICAR COLUMNA MES
+# =========================
+def unificar_columna_mes(df):
+
+    # Detectar todas las columnas que empiezan por "mes"
+    columnas_mes = [col for col in df.columns if col.lower().startswith("mes")]
+
+    if not columnas_mes:
+        print("No se encontraron columnas de mes.")
+        return df
+
+    # Tomar la primera como referencia
+    columna_principal = columnas_mes[0]
+
+    # Crear columna unificada
+    df["mes"] = df[columna_principal]
+
+    # Eliminar todas las columnas mes_*
+    df = df.drop(columns=columnas_mes)
+
+    # Mover "mes" a primera posición
+    columnas_finales = ["mes"] + [col for col in df.columns if col != "mes"]
+    df = df[columnas_finales]
+
+    return df
+
+
+# =========================
+# MAIN
 # =========================
 def main():
 
-    print("Cargando hoja 'Datos'...")
+    print("Procesando evolution data...")
 
-    df = pd.read_excel(INPUT_PATH, sheet_name="Datos", header=None)
+    if not RAW_FILE.exists():
+        print("No se encontró evolution_raw.csv")
+        return
 
-    # Fila 0 → categorías principales
-    categorias = df.iloc[0]
+    PROCESSED_DIR.mkdir(parents=True, exist_ok=True)
 
-    # Fila 1 → subcolumnas (Mes, Dato, Acum.)
-    subcolumnas = df.iloc[1]
+    df = pd.read_csv(RAW_FILE)
+    df.columns = df.columns.str.strip()
 
-    # Propagar categorías hacia la derecha
-    categorias = categorias.ffill()
+    # Resolver duplicados
+    df = resolver_columnas_duplicadas(df)
 
-    nuevas_columnas = []
+    # Unificar columna mes
+    df = unificar_columna_mes(df)
 
-    for cat, sub in zip(categorias, subcolumnas):
+    # Guardar archivo procesado
+    df.to_csv(OUTPUT_FILE, index=False)
 
-        # Ignorar columnas completamente vacías
-        if pd.isna(cat) and pd.isna(sub):
-            nuevas_columnas.append(None)
-            continue
-
-        if pd.isna(sub):
-            nuevas_columnas.append(None)
-            continue
-
-        categoria_limpia = limpiar_texto(cat)
-        sub_limpia = limpiar_texto(sub)
-
-        nuevo_nombre = f"{sub_limpia}_{categoria_limpia}"
-        nuevas_columnas.append(nuevo_nombre)
-
-    # Eliminar primeras dos filas
-    df = df.iloc[2:].copy()
-
-    # Asignar nuevas columnas
-    df.columns = nuevas_columnas
-
-    # Eliminar columnas None (separadores vacíos)
-    df = df.loc[:, df.columns.notna()]
-
-    print("Guardando archivo procesado...")
-    df.to_csv(OUTPUT_PATH, index=False)
-
-    print("Proceso finalizado correctamente")
+    print("Archivo procesado correctamente.")
+    print(f"Generado: {OUTPUT_FILE.name}")
 
 
 if __name__ == "__main__":
