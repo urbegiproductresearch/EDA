@@ -6,10 +6,9 @@ import os
 
 
 # =========================
-# RUTAS BASE (ROBUSTAS)
+# RUTAS BASE
 # =========================
 
-# Directorio raíz del repo (funciona en local y en GitHub Actions)
 REPO_ROOT = Path(os.getcwd())
 
 RAW_DIR = REPO_ROOT / "procesamiento_evolution" / "data" / "raw"
@@ -66,27 +65,26 @@ def unificar_columna_mes(df):
 def main():
 
     print("=== INICIO PROCESAMIENTO EVOLUTION ===")
-    print(f"Directorio actual: {REPO_ROOT}")
-    print(f"Buscando CSV en: {RAW_DIR}")
+    print(f"Buscando Excel en: {RAW_DIR}")
 
     if not RAW_DIR.exists():
         print("❌ No existe la carpeta raw.")
         return
 
-    archivos_csv = list(RAW_DIR.glob("*.csv"))
+    archivos_excel = list(RAW_DIR.glob("*.xlsx"))
 
-    if not archivos_csv:
-        print("❌ No se encontraron archivos CSV en raw.")
+    if not archivos_excel:
+        print("❌ No se encontraron archivos .xlsx en raw.")
         return
 
-    print(f"✔ Archivos detectados: {[f.name for f in archivos_csv]}")
+    print(f"✔ Archivos detectados: {[f.name for f in archivos_excel]}")
 
     PROCESSED_DIR.mkdir(parents=True, exist_ok=True)
 
     dfs = []
-    for archivo in archivos_csv:
+    for archivo in archivos_excel:
         print(f"Leyendo {archivo.name}")
-        df_temp = pd.read_csv(archivo)
+        df_temp = pd.read_excel(archivo, sheet_name="Datos")
         df_temp.columns = df_temp.columns.str.strip()
         dfs.append(df_temp)
 
