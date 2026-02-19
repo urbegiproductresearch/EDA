@@ -15,7 +15,7 @@ OUTPUT_FILE = PROCESSED_DIR / "evolution_data_processed.csv"
 
 
 # =========================
-# ELIMINAR MESES DUPLICADOS
+# UNIFICAR COLUMNA MES
 # =========================
 def unificar_columna_mes(df):
 
@@ -26,10 +26,16 @@ def unificar_columna_mes(df):
 
     columna_principal = columnas_mes[0]
 
+    # Crear columna mes general
     df["mes"] = df[columna_principal]
 
+    # Forzar tipo datetime
+    df["mes"] = pd.to_datetime(df["mes"], errors="coerce")
+
+    # Eliminar columnas mes_*
     df = df.drop(columns=columnas_mes)
 
+    # Colocar mes como primera columna
     columnas_finales = ["mes"] + [col for col in df.columns if col != "mes"]
     df = df[columnas_finales]
 
@@ -65,12 +71,14 @@ def main():
     archivo = archivos_excel[0]
     print(f"Leyendo archivo: {archivo.name}")
 
+    # Leer hoja "Datos" con encabezado multinivel
     df_raw = pd.read_excel(
         archivo,
         sheet_name="Datos",
         header=[0, 1]
     )
 
+    # Construcción limpia de nombres de columnas
     nuevas_columnas = []
 
     for categoria, subheader in df_raw.columns:
@@ -87,20 +95,23 @@ def main():
 
     df_raw.columns = nuevas_columnas
 
-    # Unificar mes
+    # Aplicar limpieza
     df_final = unificar_columna_mes(df_raw)
-
-    # Eliminar columnas Acum1_
     df_final = eliminar_acum1(df_final)
 
+    # Crear carpeta si no existe
     PROCESSED_DIR.mkdir(parents=True, exist_ok=True)
+
+    # Guardar resultado
     df_final.to_csv(OUTPUT_FILE, index=False)
 
     print("Archivo procesado correctamente.")
     print(f"Generado: {OUTPUT_FILE.name}")
+    print(f"Tipo columna mes: {df_final['mes'].dtype}")
 
 
 if __name__ == "__main__":
     main()
+
 
 
