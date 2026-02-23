@@ -15,7 +15,7 @@ PROCESSED_DIR = BASE_DIR / "data" / "processed"
 
 
 # =========================
-# RESOLVER COLUMNAS DUPLICADAS
+# RESOLVER DUPLICADOS CORRECTAMENTE
 # =========================
 
 def resolver_columnas_duplicadas(df):
@@ -39,8 +39,6 @@ def resolver_columnas_duplicadas(df):
 
         if no_numericas:
             nuevas_columnas[no_numericas[0]] = base
-            for col in no_numericas[1:]:
-                nuevas_columnas[col] = f"{base}_text"
         else:
             nuevas_columnas[columnas[0]] = base
 
@@ -48,15 +46,14 @@ def resolver_columnas_duplicadas(df):
             nuevas_columnas[col] = f"{base}_num"
 
     df = df.rename(columns=nuevas_columnas)
-
     return df
 
 
 # =========================
-# LIMPIAR NOMBRE COLUMNA
+# LIMPIAR TEXTO
 # =========================
 
-def limpiar_nombre(texto):
+def limpiar_texto(texto):
 
     texto = texto.lower().strip()
     texto = re.sub(r"[áàäâ]", "a", texto)
@@ -72,25 +69,28 @@ def limpiar_nombre(texto):
 
 
 # =========================
-# ONE HOT GENERICO
+# ONE HOT CANALES (CORRECTO)
 # =========================
 
-def aplicar_one_hot(df, columna_original, prefijo):
+def aplicar_one_hot_canales(df):
 
-    if columna_original not in df.columns:
-        print(f"No existe la columna {columna_original}")
+    columna = "Canales a los que está suscrito"
+
+    if columna not in df.columns:
         return df
 
     valores = set()
 
-    for fila in df[columna_original].fillna(""):
+    for fila in df[columna].fillna(""):
         items = [i.strip() for i in str(fila).split(",") if i.strip()]
         for item in items:
             valores.add(item)
 
     for valor in valores:
-        nombre_col = f"{prefijo}_{limpiar_nombre(valor)}"
-        df[nombre_col] = df[columna_original].apply(
+
+        nombre_col = f"supercategoria[canal_{limpiar_texto(valor)}]"
+
+        df[nombre_col] = df[columna].apply(
             lambda x: 1 if valor in str(x) else 0
         )
 
@@ -98,7 +98,48 @@ def aplicar_one_hot(df, columna_original, prefijo):
 
 
 # =========================
-# MAIN MULTI-COMUNIDAD
+# SEPARAR PERFILES EN COLUMNAS ORDENADAS
+# =========================
+
+def separar_perfiles(df):
+
+    columna = "Perfiles"
+
+    if columna not in df.columns:
+        return df
+
+    # Obtener máximo número de perfiles en el dataset
+    max_perfiles = 0
+
+    perfiles_lista = []
+
+    for fila in df[columna].fillna(""):
+        items = [i.strip() for i in str(fila).split(",") if i.strip()]
+        perfiles_lista.append(items)
+        if len(items) > max_perfiles:
+            max_perfiles = len(items)
+
+    # Crear columnas dinámicamente
+    nombres_columnas = [
+        "supercategoria[perfil_principal]",
+        "supercategoria[perfil_secundario]",
+        "supercategoria[perfil_terciario]",
+        "supercategoria[perfil_cuaternario]",
+        "supercategoria[perfil_quinto]"
+    ]
+
+    for i in range(max_perfiles):
+        if i < len(nombres_columnas):
+            df[nombres_columnas[i]] = [
+                perfiles[i] if i < len(perfiles) else None
+                for perfiles in perfiles_lista
+            ]
+
+    return df
+
+
+# =========================
+# MAIN
 # =========================
 
 def main():
@@ -107,17 +148,12 @@ def main():
 
     PROCESSED_DIR.mkdir(parents=True, exist_ok=True)
 
-    if not RAW_DIR.exists():
-        print("No existe carpeta raw")
-        return
-
     for carpeta in RAW_DIR.iterdir():
 
         if not carpeta.is_dir():
             continue
 
         comunidad = carpeta.name
-
         print(f"\nProcesando comunidad: {comunidad}")
 
         archivo = carpeta / "users_raw.csv"
@@ -133,19 +169,11 @@ def main():
         # 1️⃣ Resolver duplicados
         df = resolver_columnas_duplicadas(df)
 
-        # 2️⃣ One hot Canales
-        df = aplicar_one_hot(
-            df,
-            "Canales a los que está suscrito",
-            "canal"
-        )
+        # 2️⃣ One hot canales
+        df = aplicar_one_hot_canales(df)
 
-        # 3️⃣ One hot Perfiles
-        df = aplicar_one_hot(
-            df,
-            "Perfiles",
-            "perfil"
-        )
+        # 3️⃣ Separar perfiles
+        df = separar_perfiles(df)
 
         output_file = PROCESSED_DIR / f"users_processed_{comunidad}.csv"
 
