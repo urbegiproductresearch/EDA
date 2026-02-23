@@ -1,9 +1,7 @@
 import pandas as pd
-import numpy as np
 import re
 from pathlib import Path
 from collections import defaultdict
-import sys
 
 # =========================
 # RUTAS BASE
@@ -15,37 +13,11 @@ BASE_DIR = CURRENT_FILE.parent.parent
 RAW_DIR = BASE_DIR / "data" / "raw"
 PROCESSED_DIR = BASE_DIR / "data" / "processed"
 
-sys.path.append(str(BASE_DIR))
-
 
 # =========================
-# LECTOR ROBUSTO DE CSV
+# RESOLVER COLUMNAS DUPLICADAS
 # =========================
-def leer_csv_seguro(path):
 
-    encodings_a_probar = [
-        "utf-8",
-        "utf-8-sig",
-        "cp1252",
-        "latin1"
-    ]
-
-    for enc in encodings_a_probar:
-        try:
-            print(f"Probando encoding: {enc}")
-            df = pd.read_csv(path, encoding=enc)
-            print(f"✅ Funciona con: {enc}")
-            return df
-        except UnicodeDecodeError:
-            print(f"❌ Fallo con: {enc}")
-            continue
-
-    raise ValueError("No se pudo leer el archivo con ningún encoding probado.")
-
-
-# =========================
-# RESOLVER DUPLICADOS
-# =========================
 def resolver_columnas_duplicadas(df):
 
     grupos = defaultdict(list)
@@ -57,149 +29,86 @@ def resolver_columnas_duplicadas(df):
     nuevas_columnas = {}
 
     for base, columnas in grupos.items():
-        nuevas_columnas[columnas[0]] = base
+
+        if len(columnas) == 1:
+            nuevas_columnas[columnas[0]] = base
+            continue
+
+        numericas = [c for c in columnas if pd.api.types.is_numeric_dtype(df[c])]
+        no_numericas = [c for c in columnas if not pd.api.types.is_numeric_dtype(df[c])]
+
+        if no_numericas:
+            nuevas_columnas[no_numericas[0]] = base
+            for col in no_numericas[1:]:
+                nuevas_columnas[col] = f"{base}_text"
+        else:
+            nuevas_columnas[columnas[0]] = base
+
+        for col in numericas:
+            nuevas_columnas[col] = f"{base}_num"
 
     df = df.rename(columns=nuevas_columnas)
+
     return df
 
 
 # =========================
-# CLASIFICACION CONTENIDO
+# LIMPIAR NOMBRE COLUMNA
 # =========================
-def clasificar_categoria_contenido(tipo_perfil):
 
-    if tipo_perfil == "Evento":
-        return "Evento"
+def limpiar_nombre(texto):
 
-    if tipo_perfil == "Ayuda":
-        return "Ayuda"
+    texto = texto.lower().strip()
+    texto = re.sub(r"[áàäâ]", "a", texto)
+    texto = re.sub(r"[éèëê]", "e", texto)
+    texto = re.sub(r"[íìïî]", "i", texto)
+    texto = re.sub(r"[óòöô]", "o", texto)
+    texto = re.sub(r"[úùüû]", "u", texto)
+    texto = re.sub(r"ñ", "n", texto)
+    texto = re.sub(r"[^a-z0-9]+", "_", texto)
+    texto = texto.strip("_")
 
-    if tipo_perfil in ["Noticia", "Noticias"]:
-        return "Actualidad"
-
-    return "Actualidad"
+    return texto
 
 
 # =========================
-# PROCESAMIENTO FILA
+# ONE HOT GENERICO
 # =========================
-def procesar_fila(row, config):
 
-    categorias = row.get("Categorías", "")
-    tipo_perfil = str(row.get("Tipo de perfil", "")).strip()
+def aplicar_one_hot(df, columna_original, prefijo):
 
-    if pd.isna(categorias):
-        categorias = ""
+    if columna_original not in df.columns:
+        print(f"No existe la columna {columna_original}")
+        return df
 
-    items = [c.strip() for c in str(categorias).split(",") if c.strip()]
+    valores = set()
 
-    data = {}
+    for fila in df[columna_original].fillna(""):
+        items = [i.strip() for i in str(fila).split(",") if i.strip()]
+        for item in items:
+            valores.add(item)
 
-    # =========================
-    # GENERO
-    # =========================
-    data["supercategoria[Género]"] = next(
-        (i for i in items if i in config["generos"]),
-        np.nan
-    )
-
-    # =========================
-    # EDAD / GRUPO EDAD
-    # =========================
-    edad_col = "supercategoria[Edad]"
-    if config["nombre_comunidad"] == "altxor":
-        edad_col = "supercategoria[Grupo_de_edad]"
-
-    data[edad_col] = next(
-        (i for i in items if i in config["edades"]),
-        np.nan
-    )
-
-    # =========================
-    # ROL
-    # =========================
-    data["supercategoria[Rol]"] = next(
-        (i for i in items if i in config["roles"]),
-        np.nan
-    )
-
-    # =========================
-    # ÁMBITO
-    # =========================
-    data["supercategoria[Ámbito]"] = next(
-        (i for i in items if i in config["ambitos"]),
-        np.nan
-    )
-
-    # =========================
-    # SECTOR
-    # =========================
-    if config.get("sectores"):
-        sectores = [i for i in items if i in config["sectores"]]
-        data["supercategoria[Sector]"] = "; ".join(sectores) if sectores else np.nan
-
-    # =========================
-    # CANALES
-    # =========================
-    canales = [i for i in items if i in config["canales"]]
-    data["supercategoria[Canales]"] = "; ".join(canales) if canales else np.nan
-
-    # =========================
-    # TIPO EVENTO
-    # =========================
-    tipos_evento = [i for i in items if i in config["tipos_evento"]]
-    data["supercategoria[tipo_de_evento]"] = "; ".join(tipos_evento) if tipos_evento else np.nan
-
-    # =========================
-    # TIPO CONTENIDO
-    # =========================
-    tipos_contenido = [i for i in items if i in config["tipos_contenido"]]
-    data["supercategoria[tipo_de_contenido]"] = "; ".join(tipos_contenido) if tipos_contenido else np.nan
-
-    # =========================
-    # ÁREA (si aplica)
-    # =========================
-    if config.get("areas") and tipo_perfil in config.get("perfiles_con_area", []):
-        data["supercategoria[Área]"] = next(
-            (i for i in items if i in config["areas"]),
-            np.nan
+    for valor in valores:
+        nombre_col = f"{prefijo}_{limpiar_nombre(valor)}"
+        df[nombre_col] = df[columna_original].apply(
+            lambda x: 1 if valor in str(x) else 0
         )
 
-    # =========================
-    # FORMATO (solo Altxor)
-    # =========================
-    if config.get("formatos") and tipo_perfil == "Recurso web":
-        data["supercategoria[Formato]"] = next(
-            (i for i in items if i in config["formatos"]),
-            np.nan
-        )
-
-    # =========================
-    # TIPO DE ESPACIO (solo Altxor)
-    # =========================
-    if config.get("tipos_espacio") and tipo_perfil in ["Productos o servicios", "Producto o servicio"]:
-        data["supercategoria[tipo_de_espacio]"] = next(
-            (i for i in items if i in config["tipos_espacio"]),
-            np.nan
-        )
-
-    # =========================
-    # EXTRA CATEGORIA CONTENIDO
-    # =========================
-    data["extra[categoria_contenido]"] = clasificar_categoria_contenido(tipo_perfil)
-
-    return pd.Series(data)
+    return df
 
 
 # =========================
 # MAIN MULTI-COMUNIDAD
 # =========================
+
 def main():
+
+    print("=== INICIO PROCESAMIENTO USERS ===")
 
     PROCESSED_DIR.mkdir(parents=True, exist_ok=True)
 
     if not RAW_DIR.exists():
-        print("No existe carpeta raw.")
+        print("No existe carpeta raw")
         return
 
     for carpeta in RAW_DIR.iterdir():
@@ -208,40 +117,43 @@ def main():
             continue
 
         comunidad = carpeta.name
+
         print(f"\nProcesando comunidad: {comunidad}")
 
-        if comunidad == "konektalan":
-            from config.konektalan import CONFIG
-        elif comunidad == "altxor":
-            from config.altxor import CONFIG
-        else:
-            print(f"Comunidad desconocida: {comunidad}")
-            continue
-
-        archivo = carpeta / "resources_raw.csv"
+        archivo = carpeta / "users_raw.csv"
 
         if not archivo.exists():
-            print(f"No se encontró resources_raw.csv en {comunidad}")
+            print(f"No se encontró users_raw.csv en {comunidad}")
             continue
 
-        df = leer_csv_seguro(archivo)
+        df = pd.read_csv(archivo, sep=",")
 
         df.columns = df.columns.str.strip()
+
+        # 1️⃣ Resolver duplicados
         df = resolver_columnas_duplicadas(df)
 
-        nuevas_columnas = df.apply(
-            lambda row: procesar_fila(row, CONFIG),
-            axis=1
+        # 2️⃣ One hot Canales
+        df = aplicar_one_hot(
+            df,
+            "Canales a los que está suscrito",
+            "canal"
         )
 
-        df = pd.concat([df, nuevas_columnas], axis=1)
+        # 3️⃣ One hot Perfiles
+        df = aplicar_one_hot(
+            df,
+            "Perfiles",
+            "perfil"
+        )
 
-        output_file = PROCESSED_DIR / f"resources_processed_{comunidad}.csv"
+        output_file = PROCESSED_DIR / f"users_processed_{comunidad}.csv"
+
         df.to_csv(output_file, index=False)
 
         print(f"Generado: {output_file.name}")
 
-    print("\nProceso completado correctamente.")
+    print("\n=== PROCESO USERS COMPLETADO ===")
 
 
 if __name__ == "__main__":
