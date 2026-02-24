@@ -46,6 +46,9 @@ jobs:
           echo "ESTRUCTURA COMPLETA:"
           ls -R
 
+      - name: Procesar conversaciones
+        run: python procesamiento_conversaciones/src/procesar_conversaciones.py
+
       - name: Commit processed files
         run: |
           git config user.name "github-actions"
