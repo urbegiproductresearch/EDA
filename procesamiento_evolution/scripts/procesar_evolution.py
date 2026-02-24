@@ -1,6 +1,7 @@
 import pandas as pd
 from pathlib import Path
 import os
+import re
 
 
 # =========================
@@ -15,8 +16,59 @@ OUTPUT_FILE = PROCESSED_DIR / "evolution_data_processed.csv"
 
 
 # =========================
+# MAPA MESES EN ESPAÑOL
+# =========================
+
+MESES_MAP = {
+    "enero": "01",
+    "febrero": "02",
+    "marzo": "03",
+    "abril": "04",
+    "mayo": "05",
+    "junio": "06",
+    "julio": "07",
+    "agosto": "08",
+    "septiembre": "09",
+    "setiembre": "09",
+    "octubre": "10",
+    "noviembre": "11",
+    "diciembre": "12",
+}
+
+
+# =========================
+# CONVERTIR "Septiembre 2021" → datetime
+# =========================
+
+def convertir_mes_espanol(valor):
+
+    if pd.isna(valor):
+        return None
+
+    valor = str(valor).strip().lower()
+
+    # Separar mes y año
+    partes = valor.split()
+
+    if len(partes) != 2:
+        return None
+
+    mes_texto, año = partes
+
+    mes_num = MESES_MAP.get(mes_texto)
+
+    if not mes_num:
+        return None
+
+    fecha_str = f"{año}-{mes_num}-01"
+
+    return pd.to_datetime(fecha_str, format="%Y-%m-%d", errors="coerce")
+
+
+# =========================
 # UNIFICAR COLUMNA MES
 # =========================
+
 def unificar_columna_mes(df):
 
     columnas_mes = [col for col in df.columns if col.lower().startswith("mes_")]
@@ -27,15 +79,7 @@ def unificar_columna_mes(df):
 
     columna_principal = columnas_mes[0]
 
-    # Crear columna mes general
-    df["mes"] = df[columna_principal]
-
-    # Intentar conversión segura a datetime
-    try:
-        df["mes"] = pd.to_datetime(df["mes"], errors="raise")
-        print("Columna mes convertida a datetime correctamente.")
-    except Exception:
-        print("No se pudo convertir mes a datetime. Se mantiene como texto.")
+    df["mes"] = df[columna_principal].apply(convertir_mes_espanol)
 
     # Eliminar columnas mes_*
     df = df.drop(columns=columnas_mes)
@@ -44,12 +88,15 @@ def unificar_columna_mes(df):
     columnas_finales = ["mes"] + [col for col in df.columns if col != "mes"]
     df = df[columnas_finales]
 
+    print(f"Tipo columna mes final: {df['mes'].dtype}")
+
     return df
 
 
 # =========================
 # ELIMINAR COLUMNAS ACUM1
 # =========================
+
 def eliminar_acum1(df):
 
     columnas_acum1 = [col for col in df.columns if col.startswith("Acum1_")]
@@ -64,6 +111,7 @@ def eliminar_acum1(df):
 # =========================
 # MAIN
 # =========================
+
 def main():
 
     print("=== PROCESAMIENTO EVOLUTION DATA ===")
@@ -77,14 +125,12 @@ def main():
     archivo = archivos_excel[0]
     print(f"Leyendo archivo: {archivo.name}")
 
-    # Leer hoja Datos con encabezado multinivel
     df_raw = pd.read_excel(
         archivo,
         sheet_name="Datos",
         header=[0, 1]
     )
 
-    # Construcción de nombres de columnas
     nuevas_columnas = []
 
     for categoria, subheader in df_raw.columns:
@@ -101,19 +147,15 @@ def main():
 
     df_raw.columns = nuevas_columnas
 
-    # Aplicar limpieza
     df_final = unificar_columna_mes(df_raw)
     df_final = eliminar_acum1(df_final)
 
-    # Crear carpeta si no existe
     PROCESSED_DIR.mkdir(parents=True, exist_ok=True)
 
-    # Guardar resultado
     df_final.to_csv(OUTPUT_FILE, index=False)
 
     print("Archivo procesado correctamente.")
     print(f"Generado: {OUTPUT_FILE.name}")
-    print(f"Tipo columna mes final: {df_final['mes'].dtype}")
 
 
 if __name__ == "__main__":
