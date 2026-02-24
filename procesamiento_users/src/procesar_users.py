@@ -15,7 +15,40 @@ PROCESSED_DIR = BASE_DIR / "data" / "processed"
 
 
 # =========================
-# RESOLVER DUPLICADOS CORRECTAMENTE
+# CONFIG CANALES POR COMUNIDAD
+# =========================
+
+CANALES_CONFIG = {
+
+    "konektalan": [
+        "Trabajar en Euskadi",
+        "Emprendimiento y autoempleo",
+        "Oportunidades laborales",
+        "Formación",
+        "Guía de uso",
+        "Ayudas y subvenciones",
+        "Vivir en Euskadi",
+        "Historias de vida",
+        "Innovación en la empresa"
+    ],
+
+    "altxor": [
+        "Salud y autonomía",
+        "Mayores expatriados",
+        "Cooperación al desarrollo",
+        "Primeros pasos en Altxor Digital",
+        "Experiencias vitales",
+        "Iniciativas colectivas",
+        "Seguridad y protección",
+        "Ocio y actividad física",
+        "Ecología, medioambiente y tecnología",
+        "Participación, convivencia y voluntariado"
+    ]
+}
+
+
+# =========================
+# RESOLVER DUPLICADOS
 # =========================
 
 def resolver_columnas_duplicadas(df):
@@ -50,55 +83,36 @@ def resolver_columnas_duplicadas(df):
 
 
 # =========================
-# LIMPIAR TEXTO
+# ONE HOT CANALES CONTROLADO
 # =========================
 
-def limpiar_texto(texto):
-
-    texto = texto.lower().strip()
-    texto = re.sub(r"[áàäâ]", "a", texto)
-    texto = re.sub(r"[éèëê]", "e", texto)
-    texto = re.sub(r"[íìïî]", "i", texto)
-    texto = re.sub(r"[óòöô]", "o", texto)
-    texto = re.sub(r"[úùüû]", "u", texto)
-    texto = re.sub(r"ñ", "n", texto)
-    texto = re.sub(r"[^a-z0-9]+", "_", texto)
-    texto = texto.strip("_")
-
-    return texto
-
-
-# =========================
-# ONE HOT CANALES (CORRECTO)
-# =========================
-
-def aplicar_one_hot_canales(df):
+def aplicar_one_hot_canales(df, comunidad):
 
     columna = "Canales a los que está suscrito"
 
     if columna not in df.columns:
         return df
 
-    valores = set()
+    comunidad = comunidad.lower()
 
-    for fila in df[columna].fillna(""):
-        items = [i.strip() for i in str(fila).split(",") if i.strip()]
-        for item in items:
-            valores.add(item)
+    if comunidad not in CANALES_CONFIG:
+        return df
 
-    for valor in valores:
+    canales_config = CANALES_CONFIG[comunidad]
 
-        nombre_col = f"supercategoria[canal_{limpiar_texto(valor)}]"
+    for canal in canales_config:
+
+        nombre_col = f"canal[{canal}]"
 
         df[nombre_col] = df[columna].apply(
-            lambda x: 1 if valor in str(x) else 0
+            lambda x: 1 if canal in str(x) else 0
         )
 
     return df
 
 
 # =========================
-# SEPARAR PERFILES EN COLUMNAS ORDENADAS
+# SEPARAR PERFILES → extra[]
 # =========================
 
 def separar_perfiles(df):
@@ -108,10 +122,8 @@ def separar_perfiles(df):
     if columna not in df.columns:
         return df
 
-    # Obtener máximo número de perfiles en el dataset
-    max_perfiles = 0
-
     perfiles_lista = []
+    max_perfiles = 0
 
     for fila in df[columna].fillna(""):
         items = [i.strip() for i in str(fila).split(",") if i.strip()]
@@ -119,21 +131,19 @@ def separar_perfiles(df):
         if len(items) > max_perfiles:
             max_perfiles = len(items)
 
-    # Crear columnas dinámicamente
     nombres_columnas = [
-        "supercategoria[perfil_principal]",
-        "supercategoria[perfil_secundario]",
-        "supercategoria[perfil_terciario]",
-        "supercategoria[perfil_cuaternario]",
-        "supercategoria[perfil_quinto]"
+        "extra[perfil_principal]",
+        "extra[perfil_secundario]",
+        "extra[perfil_terciario]",
+        "extra[perfil_cuaternario]",
+        "extra[perfil_quinto]"
     ]
 
-    for i in range(max_perfiles):
-        if i < len(nombres_columnas):
-            df[nombres_columnas[i]] = [
-                perfiles[i] if i < len(perfiles) else None
-                for perfiles in perfiles_lista
-            ]
+    for i in range(min(max_perfiles, len(nombres_columnas))):
+        df[nombres_columnas[i]] = [
+            perfiles[i] if i < len(perfiles) else None
+            for perfiles in perfiles_lista
+        ]
 
     return df
 
@@ -163,16 +173,15 @@ def main():
             continue
 
         df = pd.read_csv(archivo, sep=",")
-
         df.columns = df.columns.str.strip()
 
         # 1️⃣ Resolver duplicados
         df = resolver_columnas_duplicadas(df)
 
-        # 2️⃣ One hot canales
-        df = aplicar_one_hot_canales(df)
+        # 2️⃣ One hot canales por comunidad
+        df = aplicar_one_hot_canales(df, comunidad)
 
-        # 3️⃣ Separar perfiles
+        # 3️⃣ Separar perfiles como extra[]
         df = separar_perfiles(df)
 
         output_file = PROCESSED_DIR / f"users_processed_{comunidad}.csv"
