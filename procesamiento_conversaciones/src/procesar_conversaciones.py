@@ -1,6 +1,5 @@
 import pandas as pd
 from pathlib import Path
-import re
 
 # =========================
 # RUTAS BASE
@@ -23,29 +22,14 @@ def renombrar_columnas_duplicadas(df):
 
     for col in df.columns:
 
-        # Usuarios.1 → Usuarios_num
-        if col.startswith("Usuarios."):
+        if col.startswith("Usuarios.") and pd.api.types.is_numeric_dtype(df[col]):
+            nuevas_columnas[col] = "Usuarios_num"
 
-            if pd.api.types.is_numeric_dtype(df[col]):
-                nuevas_columnas[col] = "Usuarios_num"
-
-        # Administradores.1 → Administradores_num
-        elif col.startswith("Administradores."):
-
-            if pd.api.types.is_numeric_dtype(df[col]):
-                nuevas_columnas[col] = "Administradores_num"
+        elif col.startswith("Administradores.") and pd.api.types.is_numeric_dtype(df[col]):
+            nuevas_columnas[col] = "Administradores_num"
 
     df = df.rename(columns=nuevas_columnas)
 
-    return df
-
-
-# =========================
-# LIMPIEZA GENERAL
-# =========================
-
-def limpiar_columnas(df):
-    df.columns = df.columns.str.strip()
     return df
 
 
@@ -59,33 +43,28 @@ def main():
 
     PROCESSED_DIR.mkdir(parents=True, exist_ok=True)
 
-    archivo = RAW_DIR / "conversaciones_raw.csv"
+    for carpeta in RAW_DIR.iterdir():
 
-    if not archivo.exists():
-        print("No se encontró conversaciones_raw.csv")
-        return
+        if not carpeta.is_dir():
+            continue
 
-    df = pd.read_csv(archivo)
+        comunidad = carpeta.name
+        print(f"\nProcesando comunidad: {comunidad}")
 
-    df = limpiar_columnas(df)
-    df = renombrar_columnas_duplicadas(df)
+        archivo = carpeta / "conversaciones_raw.csv"
 
-    if "Comunidades" not in df.columns:
-        print("No existe columna 'Comunidades'")
-        return
+        if not archivo.exists():
+            print(f"No se encontró conversaciones_raw.csv en {comunidad}")
+            continue
 
-    # Separar automáticamente por comunidad
-    comunidades = df["Comunidades"].dropna().unique()
+        df = pd.read_csv(archivo)
+        df.columns = df.columns.str.strip()
 
-    for comunidad in comunidades:
+        df = renombrar_columnas_duplicadas(df)
 
-        df_comunidad = df[df["Comunidades"] == comunidad].copy()
+        output_file = PROCESSED_DIR / f"conversaciones_processed_{comunidad}.csv"
 
-        nombre_comunidad = comunidad.lower().replace(" ", "_")
-
-        output_file = PROCESSED_DIR / f"conversaciones_processed_{nombre_comunidad}.csv"
-
-        df_comunidad.to_csv(output_file, index=False)
+        df.to_csv(output_file, index=False)
 
         print(f"Generado: {output_file.name}")
 
