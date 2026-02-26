@@ -8,19 +8,19 @@ Su objetivo es procesar archivos "raw" y generar automáticamente archivos "proc
 
 Actualmente se procesan las siguientes tablas:
 
-## users
+- users
 
-resources
+- resources
 
-evolution_data
+- evolution_data
 
-conversaciones
+- conversaciones
 
 Y múltiples comunidades, actualmente:
 
-KonektaLan
+- KonektaLan
 
-Altxor Digital
+- Altxor Digital
 
 El sistema está diseñado con arquitectura multi-comunidad y es escalable para incorporar nuevas comunidades sin duplicar código.
 
@@ -62,7 +62,7 @@ Se realiza commit automático si hay cambios.
 No es necesario ejecutar scripts manualmente.
 
 # 📌 Módulos actuales
-procesamiento_users
+## procesamiento_users
 
 Resolución automática de columnas duplicadas
 
@@ -74,7 +74,7 @@ Detección automática de comunidad
 
 Export por comunidad
 
-procesamiento_resources
+## procesamiento_resources
 
 Arquitectura multi-comunidad
 
@@ -84,7 +84,7 @@ Normalización estructural
 
 Export automático
 
-procesamiento_evolution
+## procesamiento_evolution
 
 Unificación de columnas de mes
 
@@ -94,7 +94,7 @@ Limpieza estructural
 
 Preparación para análisis temporal
 
-procesamiento_conversaciones
+## procesamiento_conversaciones
 
 Resolución de columnas duplicadas
 
@@ -108,11 +108,11 @@ Export por comunidad
 
 El repositorio utiliza GitHub Actions.
 
-Cada vez que se sube un nuevo archivo raw a:
+- Cada vez que se sube un nuevo archivo raw a:
 
 procesamiento_*/data/raw/**
 
-Se ejecuta automáticamente:
+- Se ejecuta automáticamente:
 
 Instalación de dependencias
 
