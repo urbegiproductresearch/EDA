@@ -142,10 +142,10 @@ Plataforma TGN → Transformación automatizada → Looker Studio
 
 Permite:
 
-Estandarizar indicadores
+- Estandarizar indicadores
 
-Automatizar informes mensuales
+- Automatizar informes mensuales
 
-Reducir intervención manual
+- Reducir intervención manual
 
-Facilitar la escalabilidad futura
+- Facilitar la escalabilidad futura
