@@ -1,102 +1,231 @@
 # 📊 EDA – Procesamiento de tablas de TGN (panel del administrador)
 
-Este repositorio contiene el análisis exploratorio y los pipelines automatizados de transformación de datos exportados desde la plataforma de TGN.
+Este repositorio contiene el sistema de análisis exploratorio y los pipelines automatizados de transformación de datos exportados desde la plataforma TGN (panel del administrador).
 
-Actualmente se procesan dos grandes tablas:
+No es únicamente un conjunto de scripts, sino una arquitectura modular diseñada para alimentar de forma automática los informes mensuales en Looker Studio.
 
-- `resources`
-- `evolution`
+🌍 Alcance actual
+
+Actualmente se procesan las siguientes tablas:
+
+users
+
+resources
+
+proyectos
+
+evolution_data
+
+conversaciones
 
 Y múltiples comunidades, actualmente:
-- KonektaLan
-- Altxor Digital
+
+KonektaLan
+
+Altxor Digital
 
 El sistema está diseñado con arquitectura multi-comunidad y es escalable para incorporar nuevas comunidades sin duplicar código.
 
----
-
-# 🏗️ Arquitectura del repositorio
-
+🏗️ Arquitectura del repositorio
 EDA/
+│
+├── EDA/                              # Análisis exploratorio (notebooks)
+│
+├── procesamiento_users/
 ├── procesamiento_resources/
+├── procesamiento_proyectos/
 ├── procesamiento_evolution/
-├── EDA/
-└── .github/workflows/
+├── procesamiento_conversaciones/
+│
+└── .github/workflows/                 # Automatización
 
----
+Cada módulo de procesamiento sigue la misma estructura:
 
-# 🔹 1. EDA (Exploratory Data Analysis)
+procesamiento_xxx/
+│
+├── data/
+│   ├── raw/           # Archivos originales exportados desde TGN
+│   └── processed/     # Archivos transformados automáticamente
+│
+├── src/ o scripts/
+└── requirements.txt   (si aplica)
+🔎 1. EDA (Exploratory Data Analysis)
 
-Carpeta: `EDA/`
+Carpeta: EDA/
 
 Contiene notebooks utilizados para:
 
-- Analizar estructura de datos exportados
-- Detectar duplicados y problemas estructurales
-- Validar taxonomías
-- Diseñar supercategorías
-- Ajustar reglas de clasificación
+Analizar estructura de datos exportados
 
-El EDA fue la base para diseñar el sistema automatizado de procesamiento.
+Detectar duplicados y problemas estructurales
 
----
+Validar taxonomías
 
-# 🔹 2. procesamiento_resources
+Diseñar supercategorías
 
-Procesa la tabla `resources`.
+Ajustar reglas de clasificación
 
-Características principales:
+Probar lógica multi-comunidad
 
-- Arquitectura multi-comunidad
-- Configuración independiente por comunidad
-- Generación automática de supercategorías
-- Separación entre información estructural y contextual
-- Commit automático mediante GitHub Actions
+El EDA fue la base conceptual para diseñar el sistema automatizado de procesamiento.
 
-Cada comunidad tiene:
-- Sus propios valores válidos
-- Sus propias supercategorías
-- Sus propias reglas de clasificación
+Aquí se experimenta.
+En los módulos de procesamiento se implementa.
 
----
+🔹 2. Procesamiento modular por tabla
 
-# 🔹 3. procesamiento_evolution
+Cada carpeta procesamiento_xxx es un pipeline independiente.
 
-Procesa la tabla `evolution`.
+Esto permite:
 
-Funciona como pipeline estructural más simple:
+Separación clara de responsabilidades
 
-- Limpieza
-- Resolución de columnas duplicadas
-- Estandarización
-- Export automático
+Escalabilidad
 
----
+Mantenimiento aislado
 
-# 🤖 Automatización
+Evolución controlada
+
+📌 procesamiento_users
+
+Procesa la tabla users.
+
+Características:
+
+Resolución automática de columnas duplicadas
+
+Generación dinámica de columnas por canal (según comunidad)
+
+Separación estructurada de perfiles (extra[perfil_x])
+
+Arquitectura multi-comunidad basada en configuración
+
+Export automático con nombre normalizado
+
+Cada comunidad puede tener:
+
+Canales distintos
+
+Perfiles distintos
+
+Configuración independiente
+
+📌 procesamiento_resources
+
+Procesa la tabla resources.
+
+Características:
+
+Arquitectura multi-comunidad
+
+Generación automática de supercategorías
+
+Separación entre información estructural y contextual
+
+Reglas parametrizadas por comunidad
+
+Commit automático vía GitHub Actions
+
+📌 procesamiento_proyectos
+
+Procesa la tabla proyectos.
+
+Pipeline estructural:
+
+Limpieza
+
+Normalización
+
+Preparación para reporting
+
+Export automático
+
+📌 procesamiento_evolution
+
+Procesa la tabla evolution_data.
+
+Pipeline enfocado en:
+
+Unificación de columnas mes
+
+Estandarización de fechas
+
+Resolución de duplicados
+
+Preparación para análisis temporal en Looker Studio
+
+Es la base de los indicadores mensuales.
+
+📌 procesamiento_conversaciones
+
+Procesa la tabla conversaciones.
+
+Características:
+
+Resolución de columnas duplicadas (Usuarios / Administradores)
+
+Renombrado estructural consistente
+
+Detección automática de comunidad
+
+Export por comunidad
+
+🤖 Automatización
 
 El repositorio utiliza GitHub Actions.
 
 Cada vez que se sube un nuevo archivo raw a:
 
-procesamiento_resources/data/raw/**
-procesamiento_evolution/data/raw/**
+procesamiento_*/data/raw/**
 
 Se ejecuta automáticamente:
 
-1. Procesamiento de resources (multi-comunidad)
-2. Procesamiento de evolution
-3. Commit automático si hay cambios
+Instalación de dependencias
 
----
+Ejecución de los scripts correspondientes
 
-# 🎯 Objetivo del sistema
+Generación de archivos en data/processed/
 
-Construir un motor de transformación de datos:
+Commit automático si hay cambios
 
-- Escalable
-- Parametrizable
-- Multi-comunidad
-- Robusto ante cambios estructurales
+El sistema está diseñado para no requerir ejecución manual.
 
-Este repositorio ya no es solo un conjunto de scripts, sino una arquitectura de transformación modular.
+🧠 Filosofía del sistema
+
+Este repositorio no es simplemente procesamiento de CSV.
+
+Es un motor de transformación de datos con las siguientes propiedades:
+
+Escalable
+
+Parametrizable
+
+Multi-comunidad
+
+Modular
+
+Robusto ante cambios estructurales
+
+Integrado con reporting automatizado
+
+Permite desacoplar:
+
+Plataforma → Transformación → Reporting
+
+Reduciendo errores manuales y dependencia operativa.
+
+🎯 Objetivo estratégico
+
+Construir una infraestructura de datos ligera que permita:
+
+Automatizar informes mensuales
+
+Estandarizar indicadores
+
+Garantizar coherencia entre comunidades
+
+Reducir intervención manual
+
+Facilitar la escalabilidad futura
+
+Este repositorio representa la capa intermedia entre la plataforma TGN y el sistema de reporting en Looker Studio.
