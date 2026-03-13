@@ -1,59 +1,62 @@
 # Notebooks Paul
 
-This folder contains exploratory and analytical notebooks developed during the analysis of community activity within the KonektaLan platform.
+Esta carpeta contiene distintos notebooks de análisis desarrollados durante el estudio de la actividad y dinámica de la comunidad de la plataforma KonektaLan.
 
-The notebooks focus on understanding how users interact within the community, identifying behavioural patterns, and developing analytical tools to diagnose the health and dynamics of the platform.
+El objetivo de estos notebooks es analizar el comportamiento de los usuarios dentro de la comunidad, identificar patrones de participación y desarrollar herramientas analíticas que permitan diagnosticar el estado y evolución de la comunidad.
 
-## Contents
+---
+
+## Contenido
 
 ### 1. Modelo de diagnóstico y dinámica de comunidad
 
-This notebook contains the main analytical framework used to study the dynamics of the community.
+Este notebook contiene el análisis principal desarrollado para estudiar la dinámica de la comunidad.
 
-The analysis includes:
+Incluye:
 
-- **User segmentation (clustering)** to identify different behavioural profiles within the community.
-- **Activation analysis**, identifying behavioural thresholds associated with higher levels of engagement.
-- **Community activity funnel**, analysing participation across different levels of engagement (consumption, participation, creation).
-- **Community health indicators**, combining different engagement metrics into a **Community Health Dashboard**.
-- **Growth scenarios**, projecting potential future evolution of the community under different assumptions.
+- **Segmentación de usuarios (clustering)** para identificar diferentes perfiles de comportamiento dentro de la comunidad.
+- **Análisis de activación**, identificando umbrales de comportamiento asociados a mayores niveles de participación.
+- **Modelo de participación de la comunidad**, analizando los distintos niveles de implicación (consumo, participación y creación).
+- **Indicadores de salud de la comunidad**, integrados en un **Community Health Dashboard**.
+- **Escenarios de crecimiento**, proyectando la posible evolución futura de la comunidad bajo distintos supuestos.
 
-The objective of this notebook is to develop a **replicable analytical model** that can be used to diagnose the dynamics of other digital communities.
+El objetivo de este análisis es construir un **modelo de diagnóstico replicable** que permita analizar la dinámica de otras comunidades digitales.
 
 ---
 
 ### 2. Mini-análisis proyectos Gune+
 
-This notebook provides a short exploratory analysis focused on the creation and dynamics of projects within the community.
+Este notebook contiene un análisis exploratorio centrado en la generación de proyectos dentro de la comunidad.
 
-The analysis explores:
+Se analiza principalmente:
 
-- The relationship between user activity and project creation.
-- Behavioural variables associated with higher likelihood of project generation.
-- The explanatory capacity of different engagement metrics.
+- La relación entre la actividad de los usuarios y la creación de proyectos.
+- Las variables de comportamiento asociadas a una mayor probabilidad de generar proyectos.
+- La capacidad explicativa de distintos indicadores de participación.
 
-This analysis complements the main diagnostic model by focusing specifically on **collaboration and structured content generation** within the platform.
-
----
-
-## Requirements
-
-The notebooks were developed using Python and rely mainly on the following libraries:
-
-- pandas
-- numpy
-- scikit-learn
-- matplotlib
-- seaborn
+Este análisis complementa el modelo principal al centrarse específicamente en la **colaboración y generación de contenido estructurado dentro de la comunidad**.
 
 ---
 
-## Purpose
+## Requisitos
 
-These notebooks were developed as part of a broader effort to:
+Los notebooks están desarrollados en Python y utilizan principalmente las siguientes librerías:
 
-- Better understand **community engagement dynamics**
-- Identify **activation mechanisms** within the platform
-- Provide **data-driven insights** for improving collaboration and participation
+- pandas  
+- numpy  
+- scikit-learn  
+- matplotlib  
+- seaborn  
 
-The analytical approach aims to combine **behavioural analysis, community health metrics and predictive modelling** to support decision-making in community-driven digital platforms.
+---
+
+## Objetivo del análisis
+
+Estos notebooks forman parte de un trabajo de análisis orientado a:
+
+- Comprender la **dinámica de participación dentro de la comunidad**.
+- Identificar **mecanismos de activación de usuarios**.
+- Evaluar la **salud de la comunidad** mediante indicadores agregados.
+- Generar **insights basados en datos** que puedan ayudar a mejorar la participación y la colaboración entre usuarios.
+
+El enfoque combina **análisis exploratorio, segmentación de usuarios, modelización y métricas de salud de comunidad** para apoyar la toma de decisiones en plataformas digitales basadas en comunidades.
